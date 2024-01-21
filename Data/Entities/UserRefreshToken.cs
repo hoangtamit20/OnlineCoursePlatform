@@ -7,13 +7,15 @@ namespace OnlineCoursePlatform.Data.Entities
     {
         [Key]
         public int Id { get; set; }
-        public string Token { get; set; } = Guid.NewGuid().ToString();
+        public string RefreshToken { get; set; } = Guid.NewGuid().ToString();
+        public string AccessToken { get; set; } = null!;
         public string UserId { get; set; } = null!;
         [ForeignKey("UserId")]
         [InverseProperty("UserRefreshTokens")]
         public virtual AppUser User { get; set; } = null!;
         public DateTime Expires { get; set; }
         public bool Active => DateTime.UtcNow <= Expires;
+        public DateTime LastRevoked { get; set; }
         public string? RemoteIpAddress { get; set; }
     }
 }

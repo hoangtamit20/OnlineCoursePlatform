@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OnlineCoursePlatform.Data.DbContext;
 
@@ -11,9 +12,11 @@ using OnlineCoursePlatform.Data.DbContext;
 namespace OnlineCoursePlatform.Data.Migrations
 {
     [DbContext(typeof(OnlineCoursePlatformDbContext))]
-    partial class OnlineCoursePlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240121153734_UpdateRefreshToken")]
+    partial class UpdateRefreshToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

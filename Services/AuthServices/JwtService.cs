@@ -22,7 +22,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
 
         private async Task<string> GenerateAccessTokenAsync(AppUser user)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("JwtConfig:SecretKey").Value!));
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]!));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
             var userClaims = new List<Claim>()
             {
@@ -34,13 +34,14 @@ namespace OnlineCoursePlatform.Services.AuthServices
             foreach (var role in await _userManager.GetRolesAsync(user))
                 userClaims.Add(new Claim(ClaimTypes.Role, role));
 
-            
+            var now = DateTime.UtcNow;
             var token = new JwtSecurityToken(
-                issuer: _configuration.GetSection("JwtConfig:ValidIssuer").Value,
-                audience: _configuration.GetSection("JwtConfig:ValidAudience").Value,
-                claims: userClaims,
-                expires: DateTime.Now.AddDays(1),
-                signingCredentials: credentials
+                    issuer: _configuration["Jwt:Issuer"],
+                    audience: _configuration["Jwt:Audience"],
+                    claims: userClaims,
+                    notBefore: now,
+                    expires: now.AddDays(1),
+                    signingCredentials: credentials
                 );
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
@@ -53,32 +54,39 @@ namespace OnlineCoursePlatform.Services.AuthServices
             // var jwtTokenHandler = new JwtSecurityTokenHandler();
 
             // // Get the secret key from the configuration.
-            // var key = _configuration.GetSection("JwtConfig:SecretKey").Value!;
+            // var key = _configuration["Jwt:SecretKey"];
 
             // // Create the claims for the JWT token.
             // var claims = await CreateClaimsAsync(user);
 
             // // Create the token descriptor for the JWT token.
-            // var tokenDescriptor = CreateTokenDescriptor(claims, DateTime.UtcNow.AddHours(1), key);
+            // var tokenDescriptor = CreateTokenDescriptor(claims, key!);
 
             // // Create the JWT token.
             // var accessToken = CreateJwtToken(jwtTokenHandler, tokenDescriptor);
+            
+
+            var accessToken = await GenerateAccessTokenAsync(user: user);
 
             // Return a new TokenModel with the access token and a new refresh token.
             return new TokenModel()
             {
-                AccessToken = await GenerateAccessTokenAsync(user: user),
-                RefreshToken = ""
+                AccessToken = accessToken,
+                RefreshToken = await GenerateRefreshTokenAsync(
+                    user: user, 
+                    ipAddress: ipAddress, 
+                    accessToken: accessToken)
             };
         }
 
         // This method generates a new refresh token for a user.
-        private async Task<string> GenerateRefreshTokenAsync(AppUser user, string? ipAddress)
+        private async Task<string> GenerateRefreshTokenAsync(AppUser user, string? ipAddress, string accessToken)
         {
             // Create a new refresh token with the user's ID, the current IP address, and an expiry date 7 days in the future.
             var refreshToken = new UserRefreshToken
             {
                 UserId = user.Id,
+                AccessToken = accessToken,
                 Expires = DateTime.UtcNow.AddDays(7), // Set expiry date 7 days in the future
                 RemoteIpAddress = ipAddress
             };
@@ -90,7 +98,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
             await _userManager.UpdateAsync(user);
 
             // Return the value of the new refresh token.
-            return refreshToken.Token;
+            return refreshToken.RefreshToken;
         }
 
         // This method creates the claims for a JWT token.
@@ -100,10 +108,8 @@ namespace OnlineCoursePlatform.Services.AuthServices
             var listClaim = new List<Claim>()
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(JwtRegisteredClaimNames.Sub, user.Email!),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email!),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString()),
+                new Claim(ClaimTypes.Name, user.Name),
+                new Claim(ClaimTypes.Email, user.Email!),
             };
 
             // Add a claim for each role the user has.
@@ -117,21 +123,22 @@ namespace OnlineCoursePlatform.Services.AuthServices
         // This method creates a token descriptor for a JWT token.
         private SecurityTokenDescriptor CreateTokenDescriptor(
             List<Claim> claims,
-            DateTime expires,
             string secretKey)
         {
             // Convert the secret key to a byte array.
             var key = Encoding.UTF8.GetBytes(secretKey);
             // Return a new SecurityTokenDescriptor.
+            var now = DateTime.UtcNow;
             return new SecurityTokenDescriptor()
             {
                 Subject = new ClaimsIdentity(claims),
-                Issuer = _configuration.GetSection("JwtConfig:ValidIssuer").Value,
-                Audience = _configuration.GetSection("JwtConfig:ValidAudience").Value,
-                Expires = expires,
+                Issuer = _configuration["Jwt:Issuer"],
+                Audience = _configuration["Jwt:Audience"],
+                NotBefore = now,
+                Expires = now.AddDays(1),
                 SigningCredentials = new SigningCredentials(
                     new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature)
+                    SecurityAlgorithms.HmacSha256)
             };
         }
 

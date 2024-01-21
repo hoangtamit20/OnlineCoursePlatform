@@ -1,7 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Web;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
@@ -11,7 +10,6 @@ using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.DTOs.AuthDtos;
 using OnlineCoursePlatform.Helpers;
-using OnlineCoursePlatform.Models.AuthModels;
 using OnlineCoursePlatform.Repositories.AuthRepositories;
 using OnlineCoursePlatform.Services.AuthServices.IAuthServices;
 
@@ -80,11 +78,11 @@ namespace OnlineCoursePlatform.Services.AuthServices
             try
             {
                 // Generate a JWT token for the user.
-                // var tokenModel = await _jwtService.GenerateJwtTokenAsync(userExists, ipAddress);
-                var tokenModel = new TokenModel(){
-                    AccessToken = await GenerateAccessTokenAsync(user: userExists),
-                    RefreshToken = ""
-                };
+                var tokenModel = await _jwtService.GenerateJwtTokenAsync(userExists, ipAddress);
+                // var tokenModel = new TokenModel(){
+                //     AccessToken = await GenerateAccessTokenAsync(user: userExists),
+                //     RefreshToken = ""
+                // };
 
                 // If the token is successfully generated, return a success response with the token.
                 return BaseReturnHelper<LoginRequestDto>.GenerateSuccessResponse(tokenModel: tokenModel, message: "Login successed");
