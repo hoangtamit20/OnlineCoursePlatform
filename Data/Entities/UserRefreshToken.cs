@@ -8,6 +8,7 @@ namespace OnlineCoursePlatform.Data.Entities
         [Key]
         public int Id { get; set; }
         public string RefreshToken { get; set; } = Guid.NewGuid().ToString();
+        [StringLength(2000)]
         public string AccessToken { get; set; } = null!;
         public string UserId { get; set; } = null!;
         [ForeignKey("UserId")]
@@ -16,6 +17,7 @@ namespace OnlineCoursePlatform.Data.Entities
         public DateTime Expires { get; set; }
         public bool Active => DateTime.UtcNow <= Expires;
         public DateTime LastRevoked { get; set; }
+        public bool IsRevoked { get; set; } = false;
         public string? RemoteIpAddress { get; set; }
     }
 }

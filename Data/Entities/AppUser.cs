@@ -18,8 +18,6 @@ namespace OnlineCoursePlatform.Data.Entities
         [Column(TypeName = "nvarchar(max)")]
         public string? Picture { get; set; }
 
-        public DateTime LastRevoked { get; set; }
-
         [Column(TypeName = "datetime")]
         public DateTime CreateDate { get; set; } = DateTime.UtcNow;
 

@@ -6,5 +6,6 @@ namespace OnlineCoursePlatform.Services.AuthServices.IAuthServices
     public interface IJwtService
     {
         Task<TokenModel> GenerateJwtTokenAsync(AppUser user, string? ipAddress);
+        Task<string> GenerateAccessTokenAsync(AppUser user);
     }
 }

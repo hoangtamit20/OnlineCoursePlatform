@@ -2,7 +2,7 @@
 
 namespace OnlineCoursePlatform.DTOs.AuthDtos
 {
-    public class RegisterRequestDto : BaseAuthDto
+    public class RegisterRequestDto : BaseAuthRequestDto
     {
         [Required(ErrorMessage = "{0} is required.")]
         [StringLength(

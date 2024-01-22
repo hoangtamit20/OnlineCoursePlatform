@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OnlineCoursePlatform.Data.DbContext;
 
@@ -11,9 +12,11 @@ using OnlineCoursePlatform.Data.DbContext;
 namespace OnlineCoursePlatform.Data.Migrations
 {
     [DbContext(typeof(OnlineCoursePlatformDbContext))]
-    partial class OnlineCoursePlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240122031640_UpdateRefreshTokenColumn")]
+    partial class UpdateRefreshTokenColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -261,9 +264,6 @@ namespace OnlineCoursePlatform.Data.Migrations
 
                     b.Property<DateTime>("Expires")
                         .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("bit");
 
                     b.Property<DateTime>("LastRevoked")
                         .HasColumnType("datetime2");

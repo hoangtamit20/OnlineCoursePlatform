@@ -1,9 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using Microsoft.EntityFrameworkCore;
 using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Constants;
-using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.DTOs.AuthDtos;
 using OnlineCoursePlatform.Helpers;
@@ -18,7 +16,6 @@ namespace OnlineCoursePlatform.Services.AuthServices
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly OnlineCoursePlatformDbContext _dbContext;
         private readonly IEmailSender _emailSender;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthRepository> _logger;
@@ -26,12 +23,11 @@ namespace OnlineCoursePlatform.Services.AuthServices
         public RegisterService(
             UserManager<AppUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            OnlineCoursePlatformDbContext dbContext,
             IEmailSender emailSender,
             IConfiguration configuration,
             ILogger<AuthRepository> logger)
-        => (_userManager, _roleManager, _dbContext, _emailSender, _configuration, _logger)
-        = (userManager, roleManager, dbContext, emailSender, configuration, logger);
+        => (_userManager, _roleManager, _emailSender, _configuration, _logger)
+        = (userManager, roleManager, emailSender, configuration, logger);
 
 
 
@@ -151,7 +147,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
         private (int, BaseResponseWithData<RegisterResponseDto>) GenerateSuccessResponse(string successMessage)
         {
             return BaseReturnHelper<RegisterResponseDto>.GenerateSuccessResponse(
-                data: new RegisterResponseDto() { SuccessMessage = successMessage },
+                data: new RegisterResponseDto() { Message = successMessage },
                 message: "Email was sent successfully.");
         }
 

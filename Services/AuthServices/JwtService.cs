@@ -20,7 +20,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
         => (_userManager, _configuration) = (userManager, configuration);
 
 
-        private async Task<string> GenerateAccessTokenAsync(AppUser user)
+        public async Task<string> GenerateAccessTokenAsync(AppUser user)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]!));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -50,22 +50,6 @@ namespace OnlineCoursePlatform.Services.AuthServices
         // This method generates a new JWT (JSON Web Token) for a user.
         public async Task<TokenModel> GenerateJwtTokenAsync(AppUser user, string? ipAddress)
         {
-            // // Create a new JWT token handler.
-            // var jwtTokenHandler = new JwtSecurityTokenHandler();
-
-            // // Get the secret key from the configuration.
-            // var key = _configuration["Jwt:SecretKey"];
-
-            // // Create the claims for the JWT token.
-            // var claims = await CreateClaimsAsync(user);
-
-            // // Create the token descriptor for the JWT token.
-            // var tokenDescriptor = CreateTokenDescriptor(claims, key!);
-
-            // // Create the JWT token.
-            // var accessToken = CreateJwtToken(jwtTokenHandler, tokenDescriptor);
-            
-
             var accessToken = await GenerateAccessTokenAsync(user: user);
 
             // Return a new TokenModel with the access token and a new refresh token.

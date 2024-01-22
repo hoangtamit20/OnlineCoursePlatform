@@ -28,4 +28,8 @@
     <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
     <PackageReference Include="Mapster" Version="7.4.0" />
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="DTOs\AuthDtos\Response\" />
+    <Folder Include="DTOs\AuthDtos\Request\" />
+  </ItemGroup>
 </Project>

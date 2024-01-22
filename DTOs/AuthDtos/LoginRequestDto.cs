@@ -1,4 +1,4 @@
 namespace OnlineCoursePlatform.DTOs.AuthDtos
 {
-    public class LoginRequestDto : BaseAuthDto { }
+    public class LoginRequestDto : BaseAuthRequestDto { }
 }

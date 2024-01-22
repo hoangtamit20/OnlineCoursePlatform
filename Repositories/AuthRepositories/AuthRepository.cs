@@ -5,6 +5,8 @@ using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.DTOs.AuthDtos;
+using OnlineCoursePlatform.DTOs.AuthDtos.Request;
+using OnlineCoursePlatform.DTOs.AuthDtos.Response;
 using OnlineCoursePlatform.Helpers;
 using OnlineCoursePlatform.Helpers.UrlHelpers;
 using OnlineCoursePlatform.Services.AuthServices.AuthServiceDtos;
@@ -22,6 +24,7 @@ namespace OnlineCoursePlatform.Repositories.AuthRepositories
         private readonly ILoginService _loginService;
         private readonly IRegisterService _registerService;
         private readonly IResetPasswordService _resetPasswordService;
+        private readonly ILogOutService _logOutService;
 
         public AuthRepository(
             UserManager<AppUser> userManager,
@@ -31,9 +34,10 @@ namespace OnlineCoursePlatform.Repositories.AuthRepositories
             OnlineCoursePlatformDbContext dbContext,
             ILoginService loginService,
             IRegisterService registerService,
-            IResetPasswordService resetPasswordService)
-        => (_userManager, _configuration, _logger, _emailSender, _dbContext, _loginService, _registerService, _resetPasswordService)
-        = (userManager, configuration, logger, emailSender, dbContext, loginService, registerService, resetPasswordService);
+            IResetPasswordService resetPasswordService,
+            ILogOutService logOutService)
+        => (_userManager, _configuration, _logger, _emailSender, _dbContext, _loginService, _registerService, _resetPasswordService, _logOutService)
+        = (userManager, configuration, logger, emailSender, dbContext, loginService, registerService, resetPasswordService, logOutService);
 
         public async Task<(int, BaseResponseWithData<RegisterResponseDto>)> RegisterRepositoryAsync(
             RegisterRequestDto registerRequestDto)
@@ -44,6 +48,22 @@ namespace OnlineCoursePlatform.Repositories.AuthRepositories
             LoginRequestDto loginRequestDto,
             string? ipAddress)
             => await _loginService.LoginServiceAsync(loginRequestDto, ipAddress);
+
+
+        
+        public async Task<(int statusCode, BaseResponseWithData<LogOutResponseDto> result)> LogOutCurrentDeviceRepositoryAsync()
+        => await _logOutService.LogOutCurrentDeviceServiceAsync();
+
+        public async Task<(int statusCode, BaseResponseWithData<LogOutResponseDto> result)> LogOutAllDeviceRepositoryAsync()
+        => await _logOutService.LogOutAllDeviceServiceAsync();
+
+
+        public async Task<(int statusCode, BaseResponseWithData<RefreshTokenResponseDto> result)> RefreshTokenRepositoryAsync(
+            RefreshTokenRequestDto refreshTokenRequestDto)
+        => await _loginService.RefreshTokenServiceAsync(refreshTokenRequestDto: refreshTokenRequestDto);
+
+
+
 
 
         public async Task<(int, BaseResponseWithData<ConfirmEmailResponseDto>)> ConfirmEmailRepositoryAsync(string id, string token)
@@ -58,7 +78,7 @@ namespace OnlineCoursePlatform.Repositories.AuthRepositories
                     statusCode: StatusCodes.Status401Unauthorized,
                     message: "Confirmed email falied",
                     data: new ConfirmEmailResponseDto(){
-                        ConfirmEmailUrl = urlHelper?.ConfirmEmailUrl}
+                        ConfirmEmailUrl = urlHelper!.ConfirmEmailUrl}
                 );
             }
             // If process of decode token from url fail
@@ -71,7 +91,7 @@ namespace OnlineCoursePlatform.Repositories.AuthRepositories
                     statusCode: StatusCodes.Status500InternalServerError,
                     message: "Internal Server Error",
                     data: new ConfirmEmailResponseDto(){
-                        ConfirmEmailUrl = urlHelper?.ConfirmEmailUrl}
+                        ConfirmEmailUrl = urlHelper!.ConfirmEmailUrl}
                 );
             }
             var userExists = await _userManager.FindByIdAsync(id);
@@ -84,7 +104,7 @@ namespace OnlineCoursePlatform.Repositories.AuthRepositories
                     statusCode: StatusCodes.Status401Unauthorized,
                     message: "Confirm email failed",
                     data: new ConfirmEmailResponseDto(){
-                        ConfirmEmailUrl = urlHelper?.ConfirmEmailUrl}
+                        ConfirmEmailUrl = urlHelper!.ConfirmEmailUrl}
                 );
             }
             // If confirm email fail
@@ -98,13 +118,13 @@ namespace OnlineCoursePlatform.Repositories.AuthRepositories
                     statusCode: StatusCodes.Status500InternalServerError,
                     message: "Internal Server Error",
                     data: new ConfirmEmailResponseDto(){
-                        ConfirmEmailUrl = urlHelper?.ConfirmEmailUrl}
+                        ConfirmEmailUrl = urlHelper!.ConfirmEmailUrl}
                 );
             }
             return BaseReturnHelper<ConfirmEmailResponseDto>
                 .GenerateSuccessResponse(
                     data: new ConfirmEmailResponseDto(){
-                        ConfirmEmailUrl = urlHelper?.ConfirmEmailUrl},
+                        ConfirmEmailUrl = urlHelper!.ConfirmEmailUrl},
                     message: "Confirm email successed.");
         }
 

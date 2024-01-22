@@ -159,6 +159,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     builder.Services.AddScoped<IRegisterService, RegisterService>();
     builder.Services.AddScoped<IRoleService, RoleService>();
     builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();
+    builder.Services.AddScoped<ILogOutService, LogOutService>();
 }
 
 // add signalR

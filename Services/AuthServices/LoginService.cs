@@ -9,6 +9,8 @@ using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.DTOs.AuthDtos;
+using OnlineCoursePlatform.DTOs.AuthDtos.Request;
+using OnlineCoursePlatform.DTOs.AuthDtos.Response;
 using OnlineCoursePlatform.Helpers;
 using OnlineCoursePlatform.Repositories.AuthRepositories;
 using OnlineCoursePlatform.Services.AuthServices.IAuthServices;
@@ -79,11 +81,6 @@ namespace OnlineCoursePlatform.Services.AuthServices
             {
                 // Generate a JWT token for the user.
                 var tokenModel = await _jwtService.GenerateJwtTokenAsync(userExists, ipAddress);
-                // var tokenModel = new TokenModel(){
-                //     AccessToken = await GenerateAccessTokenAsync(user: userExists),
-                //     RefreshToken = ""
-                // };
-
                 // If the token is successfully generated, return a success response with the token.
                 return BaseReturnHelper<LoginRequestDto>.GenerateSuccessResponse(tokenModel: tokenModel, message: "Login successed");
             }
@@ -104,6 +101,61 @@ namespace OnlineCoursePlatform.Services.AuthServices
                     errorMessage: "An error occurred while updating the user refresh token",
                     statusCode: StatusCodes.Status500InternalServerError);
             }
+        }
+
+
+
+        public async Task<(int statusCode, BaseResponseWithData<RefreshTokenResponseDto> result)> RefreshTokenServiceAsync(
+            RefreshTokenRequestDto refreshTokenRequestDto)
+        {
+            // If userRefreshToken not exists
+            var userRefreshToken = await _dbContext.UserRefreshTokens
+                .FirstOrDefaultAsync(usr => usr.RefreshToken == refreshTokenRequestDto.RefreshToken);
+            if (userRefreshToken is null)
+            {
+                return BaseReturnHelper<RefreshTokenResponseDto>.GenerateErrorResponse(
+                    errorMessage: $"Cannot found any user has the refresh token : {refreshTokenRequestDto.RefreshToken}",
+                    statusCode: StatusCodes.Status404NotFound,
+                    message: "Refresh token falied",
+                    data: null
+                );
+            }
+
+            // If refresh token was expired or was revoked
+            if (!userRefreshToken.Active || userRefreshToken.IsRevoked)
+            {
+                return BaseReturnHelper<RefreshTokenResponseDto>.GenerateErrorResponse(
+                    errorMessage: "Refresh token expired or revoked",
+                    statusCode: StatusCodes.Status401Unauthorized,
+                    message: "Refresh token faied",
+                    data: null
+                );
+            }
+
+            // Generate new access token
+            var accessToken = await _jwtService.GenerateAccessTokenAsync(
+                user: userRefreshToken.User);
+            // Update new accesstoken from current refresh token
+            userRefreshToken.AccessToken = accessToken;
+            _dbContext.UserRefreshTokens.Update(userRefreshToken);
+            try{
+                await _dbContext.SaveChangesAsync();
+                _logger.LogInformation($"User {userRefreshToken.UserId} get refresh token success.");
+                return BaseReturnHelper<RefreshTokenResponseDto>.GenerateSuccessResponse(
+                    data: new RefreshTokenResponseDto(){AccessToken = accessToken},
+                    message: "Refresh token successfully"
+                );
+            }catch(Exception ex)
+            {
+                _logger.LogError(ex, "Internal server error : An error occurred while updating accesstoken");
+                return BaseReturnHelper<RefreshTokenResponseDto>.GenerateErrorResponse(
+                    errorMessage: "An error occurred while updating accesstoken",
+                    statusCode: StatusCodes.Status500InternalServerError,
+                    message: "Refresh token error",
+                    data: null
+                );
+            }
+            
         }
 
         private async Task<AppUser?> CheckUserExistsAsync(string email)
@@ -158,8 +210,6 @@ namespace OnlineCoursePlatform.Services.AuthServices
             // Add a claim for each role the user has.
             foreach (var role in await _userManager.GetRolesAsync(user))
                 userClaims.Add(new Claim(ClaimTypes.Role, role));
-
-            System.Console.WriteLine(_configuration.GetSection("JwtConfig:ValidIssuer").Value! + _configuration.GetSection("JwtConfig:ValidAudience").Value);
             
             var token = new JwtSecurityToken(
                 issuer: _configuration.GetSection("JwtConfig:ValidIssuer").Value,

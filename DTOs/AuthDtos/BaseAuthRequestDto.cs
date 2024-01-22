@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace OnlineCoursePlatform.DTOs.AuthDtos
 {
-    public class BaseAuthDto
+    public class BaseAuthRequestDto
     {
         /// <summary>
         /// Địa chỉ email của người dùng.

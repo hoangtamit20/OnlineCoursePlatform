@@ -8,7 +8,7 @@ namespace OnlineCoursePlatform.Helpers.UrlHelpers
     {
         [Key]
         public int Id { get; set; }
-        public string? ConfirmEmailUrl { get; set; }
-        public string? ResetPasswordUrl { get; set; }
+        public string ConfirmEmailUrl { get; set; } = null!;
+        public string ResetPasswordUrl { get; set; } = null!;
     }
 }

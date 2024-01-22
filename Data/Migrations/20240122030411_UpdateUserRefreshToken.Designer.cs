@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using OnlineCoursePlatform.Data.DbContext;
 
@@ -11,9 +12,11 @@ using OnlineCoursePlatform.Data.DbContext;
 namespace OnlineCoursePlatform.Data.Migrations
 {
     [DbContext(typeof(OnlineCoursePlatformDbContext))]
-    partial class OnlineCoursePlatformDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240122030411_UpdateUserRefreshToken")]
+    partial class UpdateUserRefreshToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -185,6 +188,9 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<DateTime>("LastRevoked")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
@@ -256,14 +262,10 @@ namespace OnlineCoursePlatform.Data.Migrations
 
                     b.Property<string>("AccessToken")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("Expires")
                         .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("bit");
 
                     b.Property<DateTime>("LastRevoked")
                         .HasColumnType("datetime2");

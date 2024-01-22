@@ -1,5 +1,4 @@
-﻿using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -7,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.DTOs.AuthDtos;
+using OnlineCoursePlatform.DTOs.AuthDtos.Request;
+using OnlineCoursePlatform.DTOs.AuthDtos.Response;
 using OnlineCoursePlatform.Helpers.UrlHelpers;
 using OnlineCoursePlatform.Repositories.AuthRepositories;
 using OnlineCoursePlatform.Services.AuthServices.AuthServiceDtos;
@@ -277,31 +278,78 @@ namespace OnlineCoursePlatform.Controllers
         }
 
         /// <summary>
-        /// This api to process logout and reject accesstoken and refreshtoken
+        /// This api is to process logout and reject accesstoken and refreshtoken of current user's device
         /// </summary>
-        /// <returns></returns>
-        [HttpPost("logout")]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        /// <returns>Return a success message If user valid authentication</returns>
+        /// <response code="200">Returns the success message if password reset is successful</response>
+        /// <response code="401">If user unauthorize</response>
+        [HttpPost("/api/v1/auth/logout-current-device")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(BaseResponseWithData<LogOutResponseDto>), StatusCodes.Status200OK)]
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-        public async Task<IActionResult> Logout()
+        public async Task<IActionResult> LogoutCurrentDevice()
         {
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            // var emailClaim = User.FindFirst(JwtRegisteredClaimNames.Email);
+            var (statusCode, result) = await _authRepository.LogOutCurrentDeviceRepositoryAsync();
+            return StatusCode(statusCode: statusCode, value: result);
+        }
 
-            if (userIdClaim == null)
+        /// <summary>
+        /// This api is to process logout all device and reject accesstoken and refreshtoken of current user's
+        /// </summary>
+        /// <returns>Return a success message If user valid authentication</returns>
+        /// <response code="200">Returns the success message if password reset is successful</response>
+        /// <response code="401">If user unauthorize</response>
+        [HttpPost("/api/v1/auth/logout-all-device")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(BaseResponseWithData<LogOutResponseDto>), StatusCodes.Status200OK)]
+        [Authorize]
+        public async Task<IActionResult> LogoutAllDevice()
+        {
+            var (statusCode, result) = await _authRepository.LogOutAllDeviceRepositoryAsync();
+            return StatusCode(statusCode: statusCode, value: result);
+        }
+
+
+        /// <summary>
+        /// This API process create new access token for user keep login if acess token expire
+        /// </summary>
+        /// <param name="refreshTokenRequestDto">Include RefreshToken: was send before</param>
+        /// <returns>Return new accesstoken if refresh token request is valid or error message if refresh token is not valid</returns>
+        /// <response code="200">Returns the newly created access token</response>
+        /// <response code="400">If the data is not valid</response>
+        /// <response code="401">If the refresh token is expired or revoked</response>
+        /// <remarks>
+        /// Sample request:
+        ///
+        ///     POST /api/v1/auth/refresh-token
+        ///     {
+        ///        "refreshToken": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        ///     }
+        ///
+        /// </remarks>
+        [HttpPost("/api/v1/auth/refresh-token")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(BaseResponseWithData<LogOutResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(BaseResponseWithData<LogOutResponseDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(BaseResponseWithData<LogOutResponseDto>), StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> RefreshTokenAsync(RefreshTokenRequestDto refreshTokenRequestDto)
+        {
+            if (ModelState.IsValid)
             {
-                return StatusCode(500, "Internal Server Error");
+                var (statusCode, result) = await _authRepository
+                .RefreshTokenRepositoryAsync(refreshTokenRequestDto: refreshTokenRequestDto);
+                return StatusCode(statusCode: statusCode, value: result);
             }
-            var userId = userIdClaim.Value;                
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) return BadRequest();
-
-            user.LastRevoked = DateTime.UtcNow;
-
-            await _userManager.UpdateAsync(user);
-
-            return NoContent();
+            // If data is not valid
+            return BadRequest(new BaseResponseWithData<ResetPasswordResponseDto>()
+            {
+                IsSuccess = false,
+                Message = "Invalid data",
+                Errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList()
+            });
         }
 
 

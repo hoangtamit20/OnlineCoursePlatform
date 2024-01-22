@@ -16,7 +16,9 @@ namespace OnlineCoursePlatform.Data.DbContext
 
         #region dbset
 
-        public DbSet<UrlHelperEntity> UrlHelperEntities  {get; set; }
+        public DbSet<UserRefreshToken> UserRefreshTokens { get; set; }
+
+        public DbSet<UrlHelperEntity> UrlHelperEntities {get; set; }
 
         #endregion
 
@@ -29,6 +31,16 @@ namespace OnlineCoursePlatform.Data.DbContext
             {
                 b.HasIndex(u => u.Email).IsUnique();
                 b.HasIndex(u => u.UserName).IsUnique();
+            });
+
+            builder.Entity<AppUser>().Property(b => b.Email).IsRequired();
+            builder.Entity<AppUser>().Property(b => b.UserName).IsRequired();
+
+
+            builder.Entity<UserRefreshToken>(usr => 
+            {
+                usr.HasIndex(usr => usr.AccessToken).IsUnique();
+                usr.HasIndex(usr => usr.RefreshToken).IsUnique();
             });
 
             foreach (var entityType in builder.Model.GetEntityTypes())
