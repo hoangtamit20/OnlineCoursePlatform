@@ -112,9 +112,13 @@ namespace OnlineCoursePlatform.Controllers
         /// /// <remarks>
         /// Example:
         /// 
+        ///     Requirements:
+        ///    ClientId: 942845050866-3mhpjrmr2icagmdeu1f9011og01q11da.apps.googleusercontent.com
+        ///    This is the ID of your registered Google application. You will need it to validate the IdToken.
+        ///    IdToken: This is the token you receive from the client after the user successfully logs in with Google.
         ///     POST /api/v1/auth/login-with-google
         ///     {
-        ///        "accessToken": "hoangtamit20@gmail.com",
+        ///        "IdToken": "this is success response {credentialResponse.credential}",
         ///     }
         /// 
         /// </remarks>

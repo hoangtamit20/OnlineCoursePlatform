@@ -34,7 +34,17 @@ namespace OnlineCoursePlatform.Services.AuthServices
             (ResetPasswordRequestDto resetPasswordRequestDto)
         {
             // If data not valid
-
+            var parseTokenResult = BaseHelper.DecodeTokenFromUrl(tokenFromUrl: resetPasswordRequestDto.Token);
+            if (!parseTokenResult.IsSuccess)
+            {
+                _logger.LogWarning($"Token is not valid {parseTokenResult.Message}");
+                return BaseReturnHelper<ResetPasswordResponseDto>.GenerateErrorResponse(
+                    errorMessage: $"Token is not valid {parseTokenResult.Message}",
+                    statusCode: StatusCodes.Status400BadRequest,
+                    message: "Reset password falied",
+                    null
+                ); 
+            }            
             // If user not exist by userid
             var userExist = await _userManager.FindByIdAsync(resetPasswordRequestDto.Id);
             if (userExist is null)
@@ -50,7 +60,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
             // If confirm reset password fail
             var resetPasswordResult = await CheckResetPasswordAsync(
                 user: userExist, 
-                tokenResetPassword: resetPasswordRequestDto.Token, 
+                tokenResetPassword: parseTokenResult.Message, 
                 newPassword: resetPasswordRequestDto.NewPassword);
             if (!resetPasswordResult.success)
             {
@@ -185,7 +195,10 @@ namespace OnlineCoursePlatform.Services.AuthServices
                 user: user, token: tokenResetPassword, newPassword: newPassword);
             if (!resetPasswordResult.Succeeded)
             {
-                var errorMessage = resetPasswordResult.Errors.Select(e => e.Description).ToList().ToString();
+                var errors = resetPasswordResult.Errors.Select(e => e.Description).ToList();
+                string errorMessage = string.Empty;
+                foreach(var err in errors)
+                    errorMessage += $"{err}\n";
                 _logger.LogWarning(errorMessage);
                 return (success: false, message: errorMessage ?? string.Empty);
             }
