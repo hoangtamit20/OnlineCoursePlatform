@@ -22,8 +22,7 @@ namespace OnlineCoursePlatform.Repositories.AuthRepositories
         Task<(int statusCode, BaseResponseWithData<RefreshTokenResponseDto> result)> RefreshTokenRepositoryAsync(
             RefreshTokenRequestDto refreshTokenRequestDto);
         
-        Task<BaseResponseWithData<LoginResponseDto>> LoginWithGoogle(string idToken);
-        // Task<bool> UserExists(string username);
-        // Task<bool> ResetPassword(string username, string newPassword);
+        Task<(int statusCode, BaseResponseWithData<GoogleLoginResponseDto> result)> LoginWithGoogleRepositoryAsync(
+            GoogleLoginRequestDto googleLoginRequestDto, string? ipAddress);
     }
 }

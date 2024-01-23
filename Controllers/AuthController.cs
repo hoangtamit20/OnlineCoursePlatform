@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
@@ -19,6 +20,8 @@ namespace OnlineCoursePlatform.Controllers
     {
 
         private readonly UserManager<AppUser> _userManager;
+        private readonly SignInManager<AppUser> _signInManger;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration? _configuration;
         private readonly IEmailSender? _emailSender;
@@ -31,17 +34,19 @@ namespace OnlineCoursePlatform.Controllers
             IConfiguration configuration,
             IEmailSender emailSender,
             IAuthRepository authRepository,
-            ILogger<AuthRepository> logger
+            ILogger<AuthRepository> logger,
+            SignInManager<AppUser> signInManager,
+            IHttpContextAccessor httpContextAccessor
         )
-        => (_userManager, _roleManager, _configuration, _emailSender, _authRepository, _logger)
-        = (userManager, roleManager, configuration, emailSender, authRepository, logger);
+        => (_userManager, _roleManager, _configuration, _emailSender, _authRepository, _logger, _signInManger, _httpContextAccessor)
+        = (userManager, roleManager, configuration, emailSender, authRepository, logger, signInManager, httpContextAccessor);
 
 
         /// <summary>
-        /// This method handles the user's login process.
+        /// This API handles the user's login process.
         /// </summary>
         /// <param name="loginRequestDto">The username of the user.</param>
-        /// <returns>Returns a token if login is successful, otherwise returns an error message.</returns>
+        /// <returns>Returns access token and refresh token if login is successful, otherwise returns an error message.</returns>
         /// <response code="200">Returns the tokens if login is successful</response>
         /// <response code="400">If the request is malformed or the content is not valid</response>
         /// <response code="401">If the provided credentials are incorrect or if the email is not confirmed.
@@ -83,6 +88,46 @@ namespace OnlineCoursePlatform.Controllers
                     _logger.LogInformation($"Login successful for user: {loginRequestDto.Email} at {DateTime.UtcNow}.");
                 return StatusCode(statusCode, data);
             }
+            return BadRequest(new BaseResponseWithData<LoginResponseDto>()
+            {
+                IsSuccess = false,
+                Message = "Invalid data",
+                Errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList()
+            });
+        }
+
+
+        /// <summary>
+        /// This API handle the user's login with google process
+        /// </summary>
+        /// <param name="googleLoginRequestDto">The access token when user login with google</param>
+        /// <returns>Returns access token and refresh token if login is successful, otherwise returns an error message</returns>
+        /// <response code="200">Returns the tokens if login is successful</response>
+        /// <response code="400">If the request is malformed or the content is not valid</response>
+        /// <response code="404">If the user is not found</response>
+        /// <response code="500">If there is a server error</response>
+        /// /// <remarks>
+        /// Example:
+        /// 
+        ///     POST /api/v1/auth/login-with-google
+        ///     {
+        ///        "accessToken": "hoangtamit20@gmail.com",
+        ///     }
+        /// 
+        /// </remarks>
+        [HttpPost("/api/v1/auth/login-with-google")]
+        public async Task<IActionResult> LoginWithGoogleAsync(GoogleLoginRequestDto googleLoginRequestDto)
+        {
+            if (ModelState.IsValid)
+            {
+                var (statusCode, result) = await _authRepository.LoginWithGoogleRepositoryAsync(
+                googleLoginRequestDto: googleLoginRequestDto, ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString());
+                return StatusCode(statusCode: statusCode, value: result);
+            }
+            //If data is not valid
             return BadRequest(new BaseResponseWithData<LoginResponseDto>()
             {
                 IsSuccess = false,
@@ -323,7 +368,7 @@ namespace OnlineCoursePlatform.Controllers
         ///
         ///     POST /api/v1/auth/refresh-token
         ///     {
-        ///        "refreshToken": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        ///        "refreshToken": "this string using guid"
         ///     }
         ///
         /// </remarks>
@@ -352,10 +397,9 @@ namespace OnlineCoursePlatform.Controllers
             });
         }
 
-
-
-
-
         /*-------------------------- PROCESS REPOSITORY FRO ROLES------------------------------*/
+
+
+
     }
 }

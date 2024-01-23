@@ -10,5 +10,6 @@ namespace OnlineCoursePlatform.Helpers.UrlHelpers
         public int Id { get; set; }
         public string ConfirmEmailUrl { get; set; } = null!;
         public string ResetPasswordUrl { get; set; } = null!;
+        public string ConfirmEmailFromClientUrl { get; set; } = null!;
     }
 }

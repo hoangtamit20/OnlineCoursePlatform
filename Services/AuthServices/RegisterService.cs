@@ -1,11 +1,18 @@
+using Google.Apis.Auth;
+using Mapster;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.EntityFrameworkCore;
 using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Constants;
+using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.DTOs.AuthDtos;
+using OnlineCoursePlatform.DTOs.AuthDtos.Request;
+using OnlineCoursePlatform.DTOs.AuthDtos.Response;
 using OnlineCoursePlatform.Helpers;
 using OnlineCoursePlatform.Helpers.Emails.QuickEmailVerificationHelpers;
+using OnlineCoursePlatform.Models.Google;
 using OnlineCoursePlatform.Repositories.AuthRepositories;
 using OnlineCoursePlatform.Services.AuthServices.AuthServiceDtos;
 using OnlineCoursePlatform.Services.AuthServices.IAuthServices;
@@ -16,6 +23,8 @@ namespace OnlineCoursePlatform.Services.AuthServices
     {
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly OnlineCoursePlatformDbContext _dbContext;
+        private readonly IJwtService _jwtService;
         private readonly IEmailSender _emailSender;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AuthRepository> _logger;
@@ -23,11 +32,13 @@ namespace OnlineCoursePlatform.Services.AuthServices
         public RegisterService(
             UserManager<AppUser> userManager,
             RoleManager<IdentityRole> roleManager,
+            OnlineCoursePlatformDbContext dbContext,
+            IJwtService jwtService,
             IEmailSender emailSender,
             IConfiguration configuration,
             ILogger<AuthRepository> logger)
-        => (_userManager, _roleManager, _emailSender, _configuration, _logger)
-        = (userManager, roleManager, emailSender, configuration, logger);
+        => (_userManager, _roleManager, _dbContext, _jwtService, _emailSender, _configuration, _logger)
+        = (userManager, roleManager, dbContext, jwtService, emailSender, configuration, logger);
 
 
 
@@ -110,7 +121,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
 
         private async Task<bool> SendConfirmationEmail(AppUser user)
         {
-            var urlConfirmEmail = GetConfirmationUrl();
+            var urlConfirmEmail = await GetConfirmationUrl();
             if (string.IsNullOrEmpty(urlConfirmEmail))
             {
                 _logger.LogError("URL for email confirmation is not set");
@@ -183,6 +194,103 @@ namespace OnlineCoursePlatform.Services.AuthServices
             return (await _userManager.CreateAsync(newUser, registerRequestDto.Password), newUser);
         }
 
+
+
+        public async Task<(int statusCode, BaseResponseWithData<GoogleLoginResponseDto> result)> LoginWithGoogleServiceAsync(
+            GoogleLoginRequestDto googleLoginRequestDto, string? ipAddress)
+        {
+            // If data is valid
+
+            // If get data success from access token of google
+            try
+            {
+                var userInfoFromAccessTokenGoogle = await GetUserInfoFromGoogleIdTokenAsync(
+                    googleIdToken: googleLoginRequestDto.IdToken);
+                // If email is not exists on system
+                var userExists = await _userManager.FindByEmailAsync(userInfoFromAccessTokenGoogle.Email);
+                if (userExists is null)
+                {
+                    userExists = new AppUser()
+                    {
+                        Email = userInfoFromAccessTokenGoogle.Email,
+                        Name = userInfoFromAccessTokenGoogle.Name + " " + userInfoFromAccessTokenGoogle.FamilyName,
+                        Picture = userInfoFromAccessTokenGoogle.Picture,
+                        UserName = userInfoFromAccessTokenGoogle.Email,
+                        EmailConfirmed = true
+                    };
+                    // If create user success
+                    if ((await _userManager.CreateAsync(user: userExists)).Succeeded)
+                    {
+                        // If add role for user failed
+                        if (!await AddUserToRole(userExists.Email))
+                        {
+                            _logger.LogError("An internal server error occurred while add role for user");
+                            return BaseReturnHelper<GoogleLoginResponseDto>.GenerateErrorResponse(
+                                errorMessage: "An internal server error occurred while add role for user",
+                                statusCode: StatusCodes.Status500InternalServerError,
+                                message: "Login with google failed",
+                                data: null);
+                        }
+                        // Generate token
+                        var tokenModel = await _jwtService.GenerateJwtTokenAsync(user: userExists, ipAddress: ipAddress);
+                        return BaseReturnHelper<GoogleLoginResponseDto>.GenerateSuccessResponse(
+                            data: tokenModel.Adapt<GoogleLoginResponseDto>(),
+                            message: "Login with google success"
+                        );
+                    }
+                    _logger.LogError("An internal server error occurred while creating the user");
+                    return BaseReturnHelper<GoogleLoginResponseDto>.GenerateErrorResponse(
+                        errorMessage: "An internal server error occurred while creating the user",
+                        statusCode: StatusCodes.Status500InternalServerError,
+                        message: "Login with google failed",
+                        data: null);
+                }
+                // If user is exists
+                // Generate token
+                var tokenUserExistsModel = await _jwtService.GenerateJwtTokenAsync(user: userExists, ipAddress: ipAddress);
+                return BaseReturnHelper<GoogleLoginResponseDto>.GenerateSuccessResponse(
+                    data: tokenUserExistsModel.Adapt<GoogleLoginResponseDto>(),
+                    message: "Login with google success"
+                );
+
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return BaseReturnHelper<GoogleLoginResponseDto>.GenerateErrorResponse(
+                        errorMessage: ex.Message,
+                        statusCode: StatusCodes.Status401Unauthorized,
+                        message: "Login with google failed",
+                        data: null
+                    );
+            }
+        }
+
+
+
+        public async Task<UserInfoFromIdTokenGoogle> GetUserInfoFromGoogleIdTokenAsync(
+            string googleIdToken)
+        {
+            try
+            {
+                // Verify the Google ID token
+                var settings = new GoogleJsonWebSignature.ValidationSettings()
+                {
+                    // Adjust this value to match the ClientId of your Google app.
+                    Audience = new List<string>() { _configuration["Google:ClientId"]! },
+                };
+
+                var payload = await GoogleJsonWebSignature.ValidateAsync(googleIdToken, settings);
+                return payload.Adapt<UserInfoFromIdTokenGoogle>();
+            }
+            catch (InvalidJwtException ex)
+            {
+                // Log the error or return an error message
+                _logger.LogError($"Internal Server Error : Failed to verify Google ID token.\nTrace Log : {ex.Message}");
+                throw new Exception("Failed to verify Google ID token", ex);
+            }
+        }
+
         private async Task<RoleResultDto> AddUserToRoleAsync(string email)
         {
             var result = new RoleResultDto();
@@ -216,9 +324,10 @@ namespace OnlineCoursePlatform.Services.AuthServices
             return result;
         }
 
-        private string GetConfirmationUrl()
+        private async Task<string?> GetConfirmationUrl()
         {
-            return @"https://localhost:7209/api/v1/auth/confirm-email";
+            return (await _dbContext.UrlHelperEntities.FirstOrDefaultAsync())?.ConfirmEmailFromClientUrl;
+            // return @"https://localhost:7209/api/v1/auth/confirm-email";
         }
     }
 }

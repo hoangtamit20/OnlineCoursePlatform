@@ -142,5 +142,10 @@ namespace OnlineCoursePlatform.Repositories.AuthRepositories
         public async Task<(int, BaseResponseWithData<ResetPasswordResponseDto>)> ResetPasswordRepositoryAsync(
             ResetPasswordRequestDto resetPasswordRequestDto)
             => await _resetPasswordService.ResetPasswordServiceAsync(resetPasswordRequestDto: resetPasswordRequestDto);
+
+        public async Task<(int statusCode, BaseResponseWithData<GoogleLoginResponseDto> result)> LoginWithGoogleRepositoryAsync(
+            GoogleLoginRequestDto googleLoginRequestDto, string? ipAddress)
+        => await _registerService.LoginWithGoogleServiceAsync(
+            googleLoginRequestDto: googleLoginRequestDto, ipAddress: ipAddress);
     }
 }

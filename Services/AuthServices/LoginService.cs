@@ -1,10 +1,6 @@
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
@@ -53,7 +49,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
             // If the user does not exist, return an error response indicating that the email does not exist.
             if (userExists is null)
                 return BaseReturnHelper<LoginRequestDto>.GenerateErrorResponse(
-                    message : "Login failed",
+                    message: "Login failed",
                     errorMessage: "Email does not exist",
                     statusCode: StatusCodes.Status404NotFound);
 
@@ -63,12 +59,12 @@ namespace OnlineCoursePlatform.Services.AuthServices
             // If the password is incorrect, return an error response indicating that the password is incorrect.
             if (!isPasswordCorrect)
                 return BaseReturnHelper<LoginRequestDto>.GenerateErrorResponse(
-                    message : "Login failed",
+                    message: "Login failed",
                     errorMessage: "Incorrect password",
                     statusCode: StatusCodes.Status401Unauthorized);
 
             // If email not yet confirmed
-            var (isEmailConfirmed, messageError) = await CheckEmailConfirmedAsync(user : userExists);
+            var (isEmailConfirmed, messageError) = await CheckEmailConfirmedAsync(user: userExists);
             if (!isEmailConfirmed && messageError != null)
             {
                 return BaseReturnHelper<LoginRequestDto>.GenerateErrorResponse(
@@ -88,7 +84,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
             {
                 // If there is a database update exception while updating the user's refresh token, return an error response.
                 return BaseReturnHelper<LoginRequestDto>.GenerateErrorResponse(
-                    message : "Login failed",
+                    message: "Login failed",
                     errorMessage: "An error occurred while updating the user refresh token",
                     statusCode: StatusCodes.Status503ServiceUnavailable);
             }
@@ -134,18 +130,20 @@ namespace OnlineCoursePlatform.Services.AuthServices
 
             // Generate new access token
             var accessToken = await _jwtService.GenerateAccessTokenAsync(
-                user: userRefreshToken.User);
+                user: (await _userManager.FindByIdAsync(userRefreshToken.UserId))!);
             // Update new accesstoken from current refresh token
             userRefreshToken.AccessToken = accessToken;
             _dbContext.UserRefreshTokens.Update(userRefreshToken);
-            try{
+            try
+            {
                 await _dbContext.SaveChangesAsync();
                 _logger.LogInformation($"User {userRefreshToken.UserId} get refresh token success.");
                 return BaseReturnHelper<RefreshTokenResponseDto>.GenerateSuccessResponse(
-                    data: new RefreshTokenResponseDto(){AccessToken = accessToken},
+                    data: new RefreshTokenResponseDto() { AccessToken = accessToken },
                     message: "Refresh token successfully"
                 );
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError(ex, "Internal server error : An error occurred while updating accesstoken");
                 return BaseReturnHelper<RefreshTokenResponseDto>.GenerateErrorResponse(
@@ -155,7 +153,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
                     data: null
                 );
             }
-            
+
         }
 
         private async Task<AppUser?> CheckUserExistsAsync(string email)
@@ -176,7 +174,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
 
                 // Get the URL to redirect the user after they confirm their email
                 var urlConfirmEmail = GetConfirmationUrl();
-                
+
 
                 // Create the email confirmation URL by adding the userId and token to the query string
                 Uri finalUrl = BaseHelper.CreateConfirmationUrl(urlConfirmEmail, user.Id.ToString(), confirmEmailToken);
@@ -194,31 +192,6 @@ namespace OnlineCoursePlatform.Services.AuthServices
         private string GetConfirmationUrl()
         {
             return @"https://localhost:7209/api/v1/auth/confirm-email";
-        }
-
-
-        private async Task<string> GenerateAccessTokenAsync(AppUser user)
-        {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("JwtConfig:SecretKey").Value!));
-            var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-            var userClaims = new List<Claim>()
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Name, user.Name),
-                new Claim(ClaimTypes.Email, user.Email!)
-            };
-            // Add a claim for each role the user has.
-            foreach (var role in await _userManager.GetRolesAsync(user))
-                userClaims.Add(new Claim(ClaimTypes.Role, role));
-            
-            var token = new JwtSecurityToken(
-                issuer: _configuration.GetSection("JwtConfig:ValidIssuer").Value,
-                audience: _configuration.GetSection("JwtConfig:ValidAudience").Value,
-                claims: userClaims,
-                expires: DateTime.Now.AddDays(1),
-                signingCredentials: credentials
-                );
-            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

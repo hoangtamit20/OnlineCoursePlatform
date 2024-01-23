@@ -42,6 +42,7 @@ var builder = WebApplication.CreateBuilder(args);
         .AddIdentity<AppUser, IdentityRole>()
         .AddEntityFrameworkStores<OnlineCoursePlatformDbContext>()
         .AddSignInManager()
+        .AddDefaultTokenProviders()
         .AddRoles<IdentityRole>();
 
 
@@ -79,6 +80,11 @@ var builder = WebApplication.CreateBuilder(args);
                 return Task.CompletedTask;
             }
         };
+    })
+    .AddGoogle(googleOptions => 
+    {
+        googleOptions.ClientId = builder.Configuration["Google:ClientId"]!;
+        googleOptions.ClientSecret = builder.Configuration["Google:ClientSecret"]!;
     });
 
 
