@@ -1,11 +1,7 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using OnlineCoursePlatform.Base.BaseResponse;
-using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.DTOs.AuthDtos;
 using OnlineCoursePlatform.DTOs.AuthDtos.Request;
 using OnlineCoursePlatform.DTOs.AuthDtos.Response;
@@ -18,28 +14,16 @@ namespace OnlineCoursePlatform.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-
-        private readonly UserManager<AppUser> _userManager;
-        private readonly SignInManager<AppUser> _signInManger;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly IConfiguration? _configuration;
-        private readonly IEmailSender? _emailSender;
         private readonly IAuthRepository _authRepository;
         private readonly ILogger<AuthRepository> _logger;
 
         public AuthController(
-            UserManager<AppUser> userManager,
-            RoleManager<IdentityRole> roleManager,
-            IConfiguration configuration,
-            IEmailSender emailSender,
             IAuthRepository authRepository,
             ILogger<AuthRepository> logger,
-            SignInManager<AppUser> signInManager,
             IHttpContextAccessor httpContextAccessor
         )
-        => (_userManager, _roleManager, _configuration, _emailSender, _authRepository, _logger, _signInManger, _httpContextAccessor)
-        = (userManager, roleManager, configuration, emailSender, authRepository, logger, signInManager, httpContextAccessor);
+        => (_authRepository, _logger)
+        = (authRepository, logger);
 
 
         /// <summary>
@@ -103,26 +87,36 @@ namespace OnlineCoursePlatform.Controllers
         /// <summary>
         /// This API handle the user's login with google process
         /// </summary>
-        /// <param name="googleLoginRequestDto">The access token when user login with google</param>
+        /// <param name="googleLoginRequestDto">The access token or id token when user login with google</param>
         /// <returns>Returns access token and refresh token if login is successful, otherwise returns an error message</returns>
         /// <response code="200">Returns the tokens if login is successful</response>
         /// <response code="400">If the request is malformed or the content is not valid</response>
-        /// <response code="404">If the user is not found</response>
+        /// <response code="401">If the user is not found</response>
         /// <response code="500">If there is a server error</response>
         /// /// <remarks>
         /// Example:
         /// 
         ///     Requirements:
-        ///    ClientId: 942845050866-3mhpjrmr2icagmdeu1f9011og01q11da.apps.googleusercontent.com
-        ///    This is the ID of your registered Google application. You will need it to validate the IdToken.
-        ///    IdToken: This is the token you receive from the client after the user successfully logs in with Google.
+        ///     
+        ///     ClientId: '942845050866-3mhpjrmr2icagmdeu1f9011og01q11da.apps.googleusercontent.com'
+        ///     
+        ///     ClientMobile : '151128183564-cdsuumfna586g715uiju2a4dqeo5i8jr.apps.googleusercontent.com'
+        ///     
+        ///     This is the token of your registered Google application. You will need it to validate the IdToken or AccessToken.
+        ///    
+        ///     IdToken: This is the token you receive from the client after the user successfully logs in with Google.
+        ///     
         ///     POST /api/v1/auth/login-with-google
         ///     {
-        ///        "IdToken": "this is success response {credentialResponse.credential}",
+        ///        "IdToken": "{idtoken/accesstoken}",
         ///     }
         /// 
         /// </remarks>
         [HttpPost("/api/v1/auth/login-with-google")]
+        [ProducesResponseType(type: typeof(BaseResponseWithData<LoginResponseDto>), statusCode: StatusCodes.Status200OK)]
+        [ProducesResponseType(type: typeof(BaseResponseWithData<LoginResponseDto>), statusCode: StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(type: typeof(BaseResponseWithData<LoginResponseDto>), statusCode: StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(type: typeof(BaseResponseWithData<LoginResponseDto>), statusCode: StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> LoginWithGoogleAsync(GoogleLoginRequestDto googleLoginRequestDto)
         {
             if (ModelState.IsValid)
@@ -400,10 +394,5 @@ namespace OnlineCoursePlatform.Controllers
                     .ToList()
             });
         }
-
-        /*-------------------------- PROCESS REPOSITORY FRO ROLES------------------------------*/
-
-
-
     }
 }

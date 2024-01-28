@@ -1,15 +1,20 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using OnlineCoursePlatform.Data.Entities;
 
 namespace OnlineCoursePlatform.Repositories.RoleRepositories
 {
     public class RoleRepository : IRoleRepository
     {
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly UserManager<AppUser> _userManager;
 
-        public RoleRepository(RoleManager<IdentityRole> roleManager)
+        public RoleRepository(
+            RoleManager<IdentityRole> roleManager,
+            UserManager<AppUser> userManager)
         {
             _roleManager = roleManager;
+            _userManager = userManager;
         }
 
         public async Task<IEnumerable<IdentityRole>> GetAllRolesAsync()

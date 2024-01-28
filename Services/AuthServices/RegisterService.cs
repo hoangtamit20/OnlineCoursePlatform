@@ -3,6 +3,7 @@ using Mapster;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Constants;
 using OnlineCoursePlatform.Data.DbContext;
@@ -204,8 +205,8 @@ namespace OnlineCoursePlatform.Services.AuthServices
             // If get data success from access token of google
             try
             {
-                var userInfoFromAccessTokenGoogle = await GetUserInfoFromGoogleIdTokenAsync(
-                    googleIdToken: googleLoginRequestDto.IdToken);
+                var userInfoFromAccessTokenGoogle = await GetUserInfoFromGoogleTokenAsync(
+                    googleToken: googleLoginRequestDto.IdToken);
                 // If email is not exists on system
                 var userExists = await _userManager.FindByEmailAsync(userInfoFromAccessTokenGoogle.Email);
                 if (userExists is null)
@@ -213,7 +214,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
                     userExists = new AppUser()
                     {
                         Email = userInfoFromAccessTokenGoogle.Email,
-                        Name = userInfoFromAccessTokenGoogle.Name + " " + userInfoFromAccessTokenGoogle.FamilyName,
+                        Name = userInfoFromAccessTokenGoogle.Name,
                         Picture = userInfoFromAccessTokenGoogle.Picture,
                         UserName = userInfoFromAccessTokenGoogle.Email,
                         EmailConfirmed = true
@@ -268,28 +269,66 @@ namespace OnlineCoursePlatform.Services.AuthServices
 
 
 
-        public async Task<UserInfoFromIdTokenGoogle> GetUserInfoFromGoogleIdTokenAsync(
-            string googleIdToken)
+        public async Task<UserInfoFromIdTokenGoogle> GetUserInfoFromGoogleTokenAsync(string googleToken)
         {
+            var clientId = _configuration["Google:ClientId"]!;
+            var clientIdMobile = _configuration["Google:ClientIdMobile"]!;
             try
             {
-                // Verify the Google ID token
                 var settings = new GoogleJsonWebSignature.ValidationSettings()
                 {
-                    // Adjust this value to match the ClientId of your Google app.
-                    Audience = new List<string>() { _configuration["Google:ClientId"]! },
+                    Audience = new List<string>() { clientId, clientIdMobile},
                 };
 
-                var payload = await GoogleJsonWebSignature.ValidateAsync(googleIdToken, settings);
+                var payload = await GoogleJsonWebSignature.ValidateAsync(googleToken, settings);
                 return payload.Adapt<UserInfoFromIdTokenGoogle>();
             }
-            catch (InvalidJwtException ex)
+            catch (Exception ex)
             {
-                // Log the error or return an error message
-                _logger.LogError($"Internal Server Error : Failed to verify Google ID token.\nTrace Log : {ex.Message}");
-                throw new Exception("Failed to verify Google ID token", ex);
+                // Try to get user info from access token if ID token fails
+                try
+                {
+                    HttpClient client = new HttpClient();
+                    HttpResponseMessage response = await client.GetAsync($"{GoogleApiUrlConstant.UrlTokenInfo}{googleToken}");
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var content = await response.Content.ReadAsStringAsync();
+                        var tokenInfo = JsonConvert.DeserializeObject<TokenInfoRequestDto>(content);
+
+                        if (
+                            tokenInfo?.audience == clientId 
+                            || tokenInfo?.audience == clientIdMobile)
+                        {
+                            HttpResponseMessage userInfoResponse = await client.GetAsync($"{GoogleApiUrlConstant.UrlUserInfo}{googleToken}");
+
+                            if (userInfoResponse.IsSuccessStatusCode)
+                            {
+                                var userInfoContent = await userInfoResponse.Content.ReadAsStringAsync();
+                                var userInfo = JsonConvert.DeserializeObject<GoogleUserInfoRequestDto>(userInfoContent);
+                                var user = new UserInfoFromIdTokenGoogle()
+                                {
+                                    Email = userInfo?.email!,
+                                    Name = userInfo?.name!,
+                                    Picture = userInfo?.picture
+                                };
+                                return user;
+                            }
+                        }
+                    }
+
+                    _logger.LogError($"Internal Server Error : Failed to verify Google Access token.\nTrace Log : {ex.Message}");
+                    throw new Exception("Failed to verify Google Access token", ex);
+                }
+                // If idtoken and accesstoken was failed
+                catch (Exception ex1)
+                {
+                    _logger.LogError($"Internal Server Error : Failed to get user info from Google Access token.\nTrace Log : {ex.Message}");
+                    throw new Exception("Failed to get user info from Google Access token", ex1);
+                }
             }
         }
+
 
         private async Task<RoleResultDto> AddUserToRoleAsync(string email)
         {

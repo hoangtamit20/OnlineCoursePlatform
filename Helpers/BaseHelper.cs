@@ -1,4 +1,5 @@
 using System.Web;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Helpers.Emails.RenderHtmls;
@@ -56,6 +57,21 @@ namespace OnlineCoursePlatform.Helpers
                     Message = $"An error occurred while decoding the token: {ex.Message}", 
                     IsSuccess = false };
             }
+        }
+
+
+        public static string? GetErrorsFromIdentityResult(IdentityResult identityResult)
+        {
+            string result = string.Empty;
+            if (!identityResult.Succeeded)
+            {
+                foreach (var err in identityResult.Errors)
+                {
+                    result += err.Code + " : " + err.Description + "\n";
+                }
+                return result.TrimEnd('\n');
+            }
+            return null;
         }
     }
 }

@@ -4,7 +4,7 @@ namespace OnlineCoursePlatform.DTOs.AuthDtos.Request
 {
     public class GoogleLoginRequestDto
     {
-        [ValidateGoogleIdToken]
+        [ValidationTokenGoogle]
         public string IdToken { get; set; } = null!;
     }
 }

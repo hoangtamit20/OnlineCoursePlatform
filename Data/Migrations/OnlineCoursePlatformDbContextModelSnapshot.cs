@@ -246,6 +246,258 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Cart", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "CourseId")
+                        .IsUnique();
+
+                    b.ToTable("Carts");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Course", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CourseDescription")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("CourseTopicId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("IntroduceStreamUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool?>("IsFree")
+                        .HasColumnType("bit");
+
+                    b.Property<bool?>("IsPublic")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MonthlySales")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MonthlyViews")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Thumbnail")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("TotalSales")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TotalViews")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("WeeklyViews")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseTopicId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Courses");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.CourseTopic", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CourseTypeId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("MonthlyViews")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("TotalViews")
+                        .HasColumnType("int");
+
+                    b.Property<int>("WeeklyViews")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseTypeId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("CourseTopics");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.CourseType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("CourseTypes");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Lesson", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("DateRelease")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<long>("FileSize")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool?>("IsPublic")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LessonIndex")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("StreamUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Thumbnail")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<decimal>("UploadCost")
+                        .HasColumnType("decimal(19,0)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Lessons");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.UserNotification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastRead")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserNotifications");
+                });
+
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.UserRefreshToken", b =>
                 {
                     b.Property<int>("Id")
@@ -368,6 +620,77 @@ namespace OnlineCoursePlatform.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Cart", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Course", "Course")
+                        .WithMany("Carts")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.AppUser", "User")
+                        .WithOne("Cart")
+                        .HasForeignKey("OnlineCoursePlatform.Data.Entities.Cart", "UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Course", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.CourseTopic", "CourseTopic")
+                        .WithMany("Courses")
+                        .HasForeignKey("CourseTopicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.AppUser", "User")
+                        .WithMany("Courses")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CourseTopic");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.CourseTopic", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.CourseType", "CourseType")
+                        .WithMany("CourseTopics")
+                        .HasForeignKey("CourseTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CourseType");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Lesson", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Course", "Course")
+                        .WithMany("Lessons")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.UserNotification", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.AppUser", "User")
+                        .WithMany("UserNotifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.UserRefreshToken", b =>
                 {
                     b.HasOne("OnlineCoursePlatform.Data.Entities.AppUser", "User")
@@ -381,7 +704,31 @@ namespace OnlineCoursePlatform.Data.Migrations
 
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.AppUser", b =>
                 {
+                    b.Navigation("Cart")
+                        .IsRequired();
+
+                    b.Navigation("Courses");
+
+                    b.Navigation("UserNotifications");
+
                     b.Navigation("UserRefreshTokens");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Course", b =>
+                {
+                    b.Navigation("Carts");
+
+                    b.Navigation("Lessons");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.CourseTopic", b =>
+                {
+                    b.Navigation("Courses");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.CourseType", b =>
+                {
+                    b.Navigation("CourseTopics");
                 });
 #pragma warning restore 612, 618
         }

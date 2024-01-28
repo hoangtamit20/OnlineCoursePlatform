@@ -43,7 +43,9 @@ namespace OnlineCoursePlatform.Controllers
                 {
                     helper = new UrlHelperEntity()
                     {
-                        ResetPasswordUrl = urlResetPassword
+                        ResetPasswordUrl = urlResetPassword,
+                        ConfirmEmailFromClientUrl = string.Empty,
+                        ConfirmEmailUrl = string.Empty
                     };
                     _dbContext.UrlHelperEntities.Add(helper);
                     await _dbContext.SaveChangesAsync();
@@ -78,7 +80,9 @@ namespace OnlineCoursePlatform.Controllers
                 {
                     helper = new UrlHelperEntity()
                     {
-                        ConfirmEmailUrl = urlConfirmEmail
+                        ConfirmEmailUrl = urlConfirmEmail,
+                        ConfirmEmailFromClientUrl = string.Empty,
+                        ResetPasswordUrl = string.Empty
                     };
                     _dbContext.UrlHelperEntities.Add(helper);
                     await _dbContext.SaveChangesAsync();
@@ -121,7 +125,9 @@ namespace OnlineCoursePlatform.Controllers
                 {
                     helper = new UrlHelperEntity()
                     {
-                        ConfirmEmailFromClientUrl = urlConfirmEmail
+                        ConfirmEmailFromClientUrl = urlConfirmEmail,
+                        ConfirmEmailUrl = string.Empty,
+                        ResetPasswordUrl = string.Empty,
                     };
                     _dbContext.UrlHelperEntities.Add(helper);
                     await _dbContext.SaveChangesAsync();

@@ -14,11 +14,22 @@ using Microsoft.OpenApi.Models;
 using OnlineCoursePlatform.Configurations;
 using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
+using OnlineCoursePlatform.Hubs;
 using OnlineCoursePlatform.Midlewares.Auth;
 using OnlineCoursePlatform.Repositories.AuthRepositories;
+using OnlineCoursePlatform.Repositories.CourseTopicRepositories.Implementations;
+using OnlineCoursePlatform.Repositories.CourseTopicRepositories.Interfaces;
+using OnlineCoursePlatform.Repositories.CourseTypeRepositories;
+using OnlineCoursePlatform.Repositories.UserRepositories;
 using OnlineCoursePlatform.Services.AuthServices;
 using OnlineCoursePlatform.Services.AuthServices.IAuthServices;
+using OnlineCoursePlatform.Services.CourseTopicServices.Implementations;
+using OnlineCoursePlatform.Services.CourseTopicServices.Interfaces;
+using OnlineCoursePlatform.Services.CourseTypeServices.Implementations;
+using OnlineCoursePlatform.Services.CourseTypeServices.Interfaces;
 using OnlineCoursePlatform.Services.EmailServices;
+using OnlineCoursePlatform.Services.UserServices.Implementations;
+using OnlineCoursePlatform.Services.UserServices.Interfaces;
 using Swashbuckle.AspNetCore.Filters;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -156,6 +167,9 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 // add repository service
 {
     builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+    builder.Services.AddScoped<IUserRepository, UserRepository>();
+    builder.Services.AddScoped<ICourseTypeRepository, CourseTypeRepository>();
+    builder.Services.AddScoped<ICourseTopicRepository, CourseTopicRepository>();
 }
 
 // add service
@@ -166,6 +180,9 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     builder.Services.AddScoped<IRoleService, RoleService>();
     builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();
     builder.Services.AddScoped<ILogOutService, LogOutService>();
+    builder.Services.AddScoped<IUserService, UserService>();
+    builder.Services.AddScoped<ICourseTypeService, CourseTypeService>();
+    builder.Services.AddScoped<ICourseTopicService, CourseTopicService>();
 }
 
 // add signalR
@@ -195,9 +212,16 @@ var app = builder.Build();
     
     app.MapControllers();
 
+    // register middleware
+
     {
-        // register middleware
         app.UseMiddleware<JwtRevocationMiddleware>();
+    }
+
+
+    // Map SignalR Hub
+    {
+        app.MapHub<LessonHub>("lesson-hub");
     }
     app.Run();
 }
