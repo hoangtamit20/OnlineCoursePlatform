@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using OnlineCoursePlatform.Base.BaseResponse;
+using OnlineCoursePlatform.Configurations;
 using OnlineCoursePlatform.Constants;
 using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
@@ -61,31 +62,39 @@ namespace OnlineCoursePlatform.Services.AuthServices
                     "Email already exists on the system",
                     StatusCodes.Status409Conflict);
             }
-
-            var (isSuccessCreatUser, user) = await CreateUserAsync(registerRequestDto);
-            if (!isSuccessCreatUser.Succeeded)
+            
+            using var _transaction = _dbContext.Database.BeginTransaction();
             {
-                return GenerateErrorResponse(
-                    "An internal server error occurred while creating the user",
-                    StatusCodes.Status500InternalServerError);
-            }
 
-            if (!await AddUserToRole(registerRequestDto.Email))
-            {
-                return GenerateErrorResponse(
-                    "Failed to add user to role",
-                    StatusCodes.Status500InternalServerError);
-            }
+                var (isSuccessCreatUser, user) = await CreateUserAsync(registerRequestDto);
+                if (!isSuccessCreatUser.Succeeded)
+                {
+                    return GenerateErrorResponse(
+                        "An internal server error occurred while creating the user",
+                        StatusCodes.Status500InternalServerError);
+                }
 
-            if (!await SendConfirmationEmail(user))
-            {
-                return GenerateErrorResponse(
-                    "Failed to send confirmation email",
-                    StatusCodes.Status500InternalServerError);
-            }
+                if (!await AddUserToRole(registerRequestDto.Email))
+                {
+                    _logger.LogWarning("Add role for user failed ... database is rollback now.");
+                    await _transaction.RollbackAsync();
+                    return GenerateErrorResponse(
+                        "Failed to add user to role",
+                        StatusCodes.Status500InternalServerError);
+                }
 
-            _logger.LogInformation("User registration process completed successfully");
-            return GenerateSuccessResponse("Please check your email to confirm your account.");
+                if (!await SendConfirmationEmail(user))
+                {
+                    _logger.LogWarning("Send email failed ... database is rollback now.");
+                    await _transaction.RollbackAsync();
+                    return GenerateErrorResponse(
+                        "Failed to send confirmation email. Ensure you was set your 'Email Confirm Url'",
+                        StatusCodes.Status500InternalServerError);
+                }
+                await _transaction.CommitAsync();
+                _logger.LogInformation("User registration process completed successfully");
+                return GenerateSuccessResponse("Please check your email to confirm your account.");
+            }
         }
 
         private async Task<bool> IsEmailValid(RegisterRequestDto registerRequestDto)
@@ -271,13 +280,13 @@ namespace OnlineCoursePlatform.Services.AuthServices
 
         public async Task<UserInfoFromIdTokenGoogle> GetUserInfoFromGoogleTokenAsync(string googleToken)
         {
-            var clientId = _configuration["Google:ClientId"]!;
-            var clientIdMobile = _configuration["Google:ClientIdMobile"]!;
+            var clientId = _configuration[AppSettingsConfig.GOOGLE_CLIENTID_WEB]!;
+            var clientIdMobile = _configuration[AppSettingsConfig.GOOGLE_CLIENTID_MOBILE]!;
             try
             {
                 var settings = new GoogleJsonWebSignature.ValidationSettings()
                 {
-                    Audience = new List<string>() { clientId, clientIdMobile},
+                    Audience = new List<string>() { clientId, clientIdMobile },
                 };
 
                 var payload = await GoogleJsonWebSignature.ValidateAsync(googleToken, settings);
@@ -297,7 +306,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
                         var tokenInfo = JsonConvert.DeserializeObject<TokenInfoRequestDto>(content);
 
                         if (
-                            tokenInfo?.audience == clientId 
+                            tokenInfo?.audience == clientId
                             || tokenInfo?.audience == clientIdMobile)
                         {
                             HttpResponseMessage userInfoResponse = await client.GetAsync($"{GoogleApiUrlConstant.UrlUserInfo}{googleToken}");

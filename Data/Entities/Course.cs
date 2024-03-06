@@ -12,11 +12,14 @@ namespace OnlineCoursePlatform.Data.Entities
         public string Name { get; set; } = null!;
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; } = 0;
-        [StringLength(1000)]
-        public string? IntroduceStreamUrl { get; set; }
+        [StringLength(maximumLength: 100)]
+        public string? BlobContainerName { get; set; }
+        [StringLength(maximumLength: 250)]
+        public string? FileThumbnailName { get; set; }
         [StringLength(1000)]
         public string? Thumbnail { get; set; }
-        public bool? IsPublic { get; set; }
+        public bool IsPublic { get; set; } = true;
+        // public bool IsDelete { get; set; } = false;
         public bool? IsFree { get; set; }
         [StringLength(1000)]
         public string? CourseDescription { get; set; }
@@ -36,9 +39,14 @@ namespace OnlineCoursePlatform.Data.Entities
         [InverseProperty("Courses")]
         public virtual CourseTopic CourseTopic { get; set; } = null!;
         [InverseProperty("Course")]
+        public ICollection<UserCourseInteraction> UserCourseInteractions { get; set; } = new List<UserCourseInteraction>();
+        [InverseProperty("Course")]
         public virtual ICollection<Lesson> Lessons { get; set; } = new HashSet<Lesson>();
         [InverseProperty("Course")]
         public virtual ICollection<Cart> Carts { get; set; } = new HashSet<Cart>();
-
+        [InverseProperty("Course")]
+        public virtual ICollection<CourseSubtitle> CourseSubtitles { get; set; } = new List<CourseSubtitle>();
+        [InverseProperty("Course")]
+        public virtual ICollection<CourseUrlSteaming> CourseUrlSteamings { get; set; } = new List<CourseUrlSteaming>();
     }
 }

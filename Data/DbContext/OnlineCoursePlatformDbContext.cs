@@ -22,14 +22,18 @@ namespace OnlineCoursePlatform.Data.DbContext
 
         public DbSet<UserNotification> UserNotifications { get; set; }
 
+        public DbSet<UserCourseInteraction> UserCourseInteractions { get; set; }
+
         public DbSet<CourseType> CourseTypes { get; set; }
 
         public DbSet<CourseTopic> CourseTopics { get; set; }
 
         public DbSet<Course> Courses { get; set; }
-
+        public DbSet<CourseSubtitle> CourseSubtitles { get; set; }
+        public DbSet<CourseUrlSteaming> CourseUrlSteamings { get; set; }
         public DbSet<Lesson> Lessons { get; set; }
-
+        public DbSet<LessonSubtitle> LessonSubtitles { get; set; }
+        public DbSet<LessonUrlStreaming> LessonUrlStreamings { get; set; }
         public DbSet<Cart> Carts { get; set; }
 
         #endregion
@@ -54,6 +58,14 @@ namespace OnlineCoursePlatform.Data.DbContext
                 usr.HasIndex(usr => usr.AccessToken).IsUnique();
                 usr.HasIndex(usr => usr.RefreshToken).IsUnique();
             });
+
+            builder.Entity<UserCourseInteraction>()
+                .HasIndex(uci => new { uci.UserId, uci.CourseId })
+                .IsUnique();
+
+            builder.Entity<UserCourseInteraction>()
+                .HasIndex(uci => new { uci.CourseId, uci.IpAddress })
+                .IsUnique();
 
             builder.Entity<CourseType>(ct =>
             {
@@ -90,7 +102,7 @@ namespace OnlineCoursePlatform.Data.DbContext
             builder.Entity<Cart>()
                 .HasIndex(c => new { c.UserId, c.CourseId })
                 .IsUnique();
-            
+
 
             foreach (var entityType in builder.Model.GetEntityTypes())
                 if (entityType.GetTableName()!.StartsWith("AspNet"))

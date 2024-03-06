@@ -12,7 +12,7 @@ namespace OnlineCoursePlatform.Services.CourseTopicServices.Interfaces
         Task<PagedList<CourseTopicInfoModel>> GetAllsCoursesTopicsServiceAsync(
             CourseTopicFilterParams courseTopicFilterParams);
         Task<PagedList<CourseTopicInfoModel>> GetAllsSecondFilterCourseTopicsServiceAsync(
-        CourseTopicSecondFilterParams courseTopicSecondFilterParams);
+            CourseTopicSecondFilterParams courseTopicSecondFilterParams);
         Task<(int statusCode, BaseResponseWithData<CreateCourseTopicResponseDto> result)> CreateCourseTopicServiceAsync(
             CreateCourseTopicRequestDto createCourseTopicRequestDto);
         Task<(int statusCode, BaseResponseWithData<string> result)> DeleteCourseTopicAsync(int id);

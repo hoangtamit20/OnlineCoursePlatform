@@ -1,4 +1,5 @@
 using System.Web;
+using DetectLanguage;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using OnlineCoursePlatform.Base.BaseResponse;
@@ -20,7 +21,7 @@ namespace OnlineCoursePlatform.Helpers
 
         public static async Task SendConfirmationEmailAsync(IEmailSender _emailSender, string email, Uri confirmationUrl)
         {
-            var htmlMessage = RenderHtmlHelper.GetHtmlConfirmEmail(confirmationUrl);
+            var htmlMessage = RenderHtmlHelper.GetHtmlConfirmEmail(confirmationUrl, email);
 
             await _emailSender.SendEmailAsync(email, "Confirm Email", htmlMessage);
         }
@@ -46,6 +47,7 @@ namespace OnlineCoursePlatform.Helpers
                 {
                     // Decode the token using HttpUtility.UrlDecode
                     string decodedToken = HttpUtility.UrlDecode(tokenFromUrl);
+                    System.Console.WriteLine($"TOKEN HERE : {tokenFromUrl}");
                     return new BaseResponseDto() { Message = decodedToken, IsSuccess = true };
                 }
                 return new BaseResponseDto() { Message = tokenFromUrl, IsSuccess = true };
@@ -53,9 +55,11 @@ namespace OnlineCoursePlatform.Helpers
             catch (Exception ex)
             {
                 // Log the error message
-                return new BaseResponseDto() { 
-                    Message = $"An error occurred while decoding the token: {ex.Message}", 
-                    IsSuccess = false };
+                return new BaseResponseDto()
+                {
+                    Message = $"An error occurred while decoding the token: {ex.Message}",
+                    IsSuccess = false
+                };
             }
         }
 
@@ -72,6 +76,32 @@ namespace OnlineCoursePlatform.Helpers
                 return result.TrimEnd('\n');
             }
             return null;
+        }
+
+        public async static Task<(string? Code, string? Name)> DetectLanguage(IFormFile file, string apiKey)
+        {
+            try
+            {
+                DetectLanguageClient client = new DetectLanguageClient(
+                    apiKey: apiKey);
+                // Read the content of the file
+                using var reader = new StreamReader(file.OpenReadStream());
+                var content = await reader.ReadToEndAsync();
+
+                // Use the DetectLanguage client to detect the language
+                string languageCode = await client.DetectCodeAsync(content);
+                var languages = await client.GetLanguagesAsync();
+                var languageDetected = languages
+                    .Select(item => new { Code = item.code, Name = item.name })
+                    .FirstOrDefault(item => item.Code == languageCode);
+                return (languageDetected?.Code, languageDetected?.Name);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception or rethrow it
+                Console.WriteLine(ex.Message);
+                throw new Exception($"An error occured while detech language from file.", ex);
+            }
         }
     }
 }

@@ -7,7 +7,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Azure;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -17,12 +19,19 @@ using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.Hubs;
 using OnlineCoursePlatform.Midlewares.Auth;
 using OnlineCoursePlatform.Repositories.AuthRepositories;
+using OnlineCoursePlatform.Repositories.AzureRepositories.BlobStorageRepositories;
+using OnlineCoursePlatform.Repositories.AzureRepositories.MediaServiceRepositories;
+using OnlineCoursePlatform.Repositories.CourseRepositories;
 using OnlineCoursePlatform.Repositories.CourseTopicRepositories.Implementations;
 using OnlineCoursePlatform.Repositories.CourseTopicRepositories.Interfaces;
 using OnlineCoursePlatform.Repositories.CourseTypeRepositories;
 using OnlineCoursePlatform.Repositories.UserRepositories;
 using OnlineCoursePlatform.Services.AuthServices;
 using OnlineCoursePlatform.Services.AuthServices.IAuthServices;
+using OnlineCoursePlatform.Services.AzureBlobStorageServices;
+using OnlineCoursePlatform.Services.AzureMediaServices;
+using OnlineCoursePlatform.Services.CourseServices.Implementations;
+using OnlineCoursePlatform.Services.CourseServices.Interfaces;
 using OnlineCoursePlatform.Services.CourseTopicServices.Implementations;
 using OnlineCoursePlatform.Services.CourseTopicServices.Interfaces;
 using OnlineCoursePlatform.Services.CourseTypeServices.Implementations;
@@ -38,14 +47,14 @@ var builder = WebApplication.CreateBuilder(args);
     builder.Services.AddControllers();
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
-    
+
     // add dbcontext
     builder.Services
         .AddDbContextFactory<OnlineCoursePlatformDbContext>(options =>
         {
-            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")
-                ?? throw new InvalidOperationException("Connection String is not found"),
-            sqlOptions => sqlOptions.EnableRetryOnFailure());
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+            //     ?? throw new InvalidOperationException("Connection String is not found"),
+            // sqlOptions => sqlOptions.EnableRetryOnFailure());
         });
 
     // add identity
@@ -71,9 +80,9 @@ var builder = WebApplication.CreateBuilder(args);
             ValidateAudience = true,
             ValidateIssuerSigningKey = true,
             ValidateLifetime = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!))
+            ValidIssuer = builder.Configuration[AppSettingsConfig.JWT_ISSUER],
+            ValidAudience = builder.Configuration[AppSettingsConfig.JWT_AUDIENCE],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration[AppSettingsConfig.JWT_SECRETKEY]!))
         };
 
         options.Events = new JwtBearerEvents
@@ -92,19 +101,19 @@ var builder = WebApplication.CreateBuilder(args);
             }
         };
     })
-    .AddGoogle(googleOptions => 
+    .AddGoogle(googleOptions =>
     {
-        googleOptions.ClientId = builder.Configuration["Google:ClientId"]!;
-        googleOptions.ClientSecret = builder.Configuration["Google:ClientSecret"]!;
+        googleOptions.ClientId = builder.Configuration[AppSettingsConfig.GOOGLE_CLIENTID_WEB]!;
+        googleOptions.ClientSecret = builder.Configuration[AppSettingsConfig.GOOLE_CLIENTSECRET]!;
     });
 
 
-    
+
 
 
     // Configuration swagger doc
     {
-        
+
         builder.Services.AddSwaggerGen(options =>
         {
             options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
@@ -114,7 +123,7 @@ var builder = WebApplication.CreateBuilder(args);
                 Description = "Please enter your token with this format: ''Bearer YOUR_TOKEN''",
                 Type = SecuritySchemeType.ApiKey,
             });
-            
+
             options.OperationFilter<SecurityRequirementsOperationFilter>();
 
             // options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -164,12 +173,24 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     options.SuppressModelStateInvalidFilter = true;
 });
 
+// add helper
+{
+    // builder.Services.AddScoped<IAzureMediaService, AzureMediaService>();
+    builder.Services.AddAzureClients(azureBuilder =>
+    {
+        azureBuilder.AddBlobServiceClient(builder.Configuration[AppSettingsConfig.AZURE_STORAGE_ACCOUNT_CONNECTIONSTRING]);
+    });
+}
+
 // add repository service
 {
     builder.Services.AddScoped<IAuthRepository, AuthRepository>();
     builder.Services.AddScoped<IUserRepository, UserRepository>();
     builder.Services.AddScoped<ICourseTypeRepository, CourseTypeRepository>();
     builder.Services.AddScoped<ICourseTopicRepository, CourseTopicRepository>();
+    builder.Services.AddScoped<ICourseRepository, CourseRepository>();
+    builder.Services.AddScoped<IBlobStorageRepository, BlobStorageRepository>();
+    builder.Services.AddScoped<IAzureMediaServiceRepository, AzureMediaServiceRepository>();
 }
 
 // add service
@@ -183,10 +204,21 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
     builder.Services.AddScoped<IUserService, UserService>();
     builder.Services.AddScoped<ICourseTypeService, CourseTypeService>();
     builder.Services.AddScoped<ICourseTopicService, CourseTopicService>();
+    builder.Services.AddScoped<ICourseService, CourseService>();
+    builder.Services.AddScoped<IAzureMediaService, AzureMediaService>();
+    builder.Services.AddScoped<IAzureBlobStorageService, AzureBlobStorageService>();
+}
+
+// Add SignalR Hub
+{
+    // builder.Services.AddSingleton<IHubContext<ProgressHub>>();
 }
 
 // add signalR
 builder.Services.AddSignalR();
+    // .AddAzureSignalR(
+    // connectionString: builder.Configuration[AppSettingsConfig.AZURE_SIGNALR_CONNECTIONSTRING]);
+
 
 var app = builder.Build();
 {
@@ -202,14 +234,24 @@ var app = builder.Build();
     app.UseAuthentication();
     app.UseAuthorization();
 
+    // app.UseCors(options =>
+    // {
+    //     options
+    //         .AllowAnyHeader()
+    //         .AllowAnyOrigin()
+    //         .AllowAnyMethod();
+    // });
+
     app.UseCors(options =>
     {
         options
+            .WithOrigins("http://localhost:5173") // Replace with the origin of your client app
             .AllowAnyHeader()
-            .AllowAnyOrigin()
-            .AllowAnyMethod();
+            .AllowAnyMethod()
+            .AllowCredentials(); // This allows cookies, authorization headers etc.
     });
-    
+
+
     app.MapControllers();
 
     // register middleware
@@ -221,7 +263,9 @@ var app = builder.Build();
 
     // Map SignalR Hub
     {
-        app.MapHub<LessonHub>("lesson-hub");
+        // app.MapHub<LessonHub>("lesson-hub");
+        app.MapHub<ChatHub>("/chatHub");
+        app.MapHub<ProgressHub>("/progressHub");
     }
     app.Run();
 }

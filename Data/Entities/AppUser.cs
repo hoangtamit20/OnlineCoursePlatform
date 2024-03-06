@@ -23,12 +23,13 @@ namespace OnlineCoursePlatform.Data.Entities
 
         [InverseProperty("User")]
         public virtual Cart Cart { get; set; } = null!;
-
         [InverseProperty("User")]
         public virtual ICollection<UserRefreshToken> UserRefreshTokens { get; set; } = new List<UserRefreshToken>();
         [InverseProperty("User")]
         public virtual ICollection<UserNotification> UserNotifications { get; set; } = new List<UserNotification>();
         [InverseProperty("User")]
         public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
+        [InverseProperty("User")]
+        public virtual ICollection<UserCourseInteraction> UserCourseInteractions { get; set; } = new List<UserCourseInteraction>();
     }
 }

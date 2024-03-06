@@ -11,6 +11,7 @@ namespace OnlineCoursePlatform.Repositories.CourseTypeRepositories
         Task<PagedList<CourseTypeInfoModel>> GetAllsAsync(CourseTypeFilterParams courseTypeFilterParams);
         Task<PagedList<CourseTypeInfoModel>> GetAllsSecondFilterAsync(CourseTypeSecondFilterParams courseTypeSecondFilterParams);
         Task<CourseTypeInfoModel?> FindCourseTypeByIdAsync(int idCourseType);
+        Task<CourseType?> FindCourseTypeEntityByIdAsync(int idCourseType);
         Task DeleteCourseTypeByIdAsync(CourseType courseType);
         Task<CreateCourseTypeResponseDto> AddCourseTypeAsync(CourseType courseType);
         Task<CourseType> UpdateCourseTypeAsync(CourseType courseType);

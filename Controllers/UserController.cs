@@ -76,7 +76,7 @@ namespace OnlineCoursePlatform.Controllers
         [ProducesResponseType(typeof(BaseResponseWithData<AddUserRolesResponseDto>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(BaseResponseWithData<AddUserRolesResponseDto>), StatusCodes.Status422UnprocessableEntity)]
         [HttpPost("/api/v1/user/add-user-roles")]
-        [Authorize(Roles = RolesConstant.Admin)]
+        // [Authorize(Roles = RolesConstant.Admin)]
         public async Task<IActionResult> AddUserRolesAsync(AddUserRolesRequestDto addUserRolesRequestDto)
         {
             if (ModelState.IsValid)
@@ -113,7 +113,7 @@ namespace OnlineCoursePlatform.Controllers
         [ProducesResponseType(typeof(BaseResponseWithData<RemoveUserRolesResponseDto>), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(BaseResponseWithData<RemoveUserRolesResponseDto>), StatusCodes.Status500InternalServerError)]
         [HttpDelete("/api/v1/user/remove-user-roles")]
-        [Authorize(Roles = RolesConstant.Admin)]
+        // [Authorize(Roles = RolesConstant.Admin)]
         public async Task<IActionResult> RemoveUserRolesServiceAsync(
             RemoveUserRolesRequestDto removeUserRolesRequestDto)
         {

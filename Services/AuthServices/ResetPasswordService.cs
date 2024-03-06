@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using OnlineCoursePlatform.Base.BaseResponse;
+using OnlineCoursePlatform.Configurations;
 using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.DTOs.AuthDtos;
@@ -43,7 +44,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
                     statusCode: StatusCodes.Status400BadRequest,
                     message: "Reset password falied",
                     null
-                ); 
+                );
             }            
             // If user not exist by userid
             var userExist = await _userManager.FindByIdAsync(resetPasswordRequestDto.Id);
@@ -150,10 +151,10 @@ namespace OnlineCoursePlatform.Services.AuthServices
         {
             EmailVerificationModel? emailVerificationModel = await QuickEmailVerificationHelper.ValidateEmailAddressAsync(
                 emailAddress: email,
-                baseUrl: _configuration.GetSection("QuickEmailValidHelper:BaseUrl").Value!,
-                apiKey: _configuration.GetSection("QuickEmailValidHelper:ApiKey").Value!);
+                baseUrl: _configuration.GetSection(AppSettingsConfig.QuickEmail_BASEURL).Value!,
+                apiKey: _configuration.GetSection(AppSettingsConfig.QuickEmail_APIKEY).Value!);
             return (emailVerificationModel is null
-                || _configuration.GetSection("QuickEmailValidHelper:ErrorResult").Value!
+                || _configuration.GetSection(AppSettingsConfig.QuickEmail_ERRORRESULT).Value!
                     == emailVerificationModel.result);
         }
 

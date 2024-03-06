@@ -20,3 +20,6 @@
 Properties/PublishProfiles/
 Properties/ServiceDependencies/
 Properties/serviceDependencies.local.json.user
+
+# Migrations
+Data/Migrations

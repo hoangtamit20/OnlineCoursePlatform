@@ -1,3 +1,5 @@
+using OnlineCoursePlatform.Models.PagingAndFilter.Filter.Course;
+
 namespace OnlineCoursePlatform.Base.BaseResponse
 {
     public class BasePagedResultDto<T>
@@ -9,6 +11,7 @@ namespace OnlineCoursePlatform.Base.BaseResponse
         public bool HasPrevious { get; set; }
         public bool HasNext { get; set; }
         public string? FirstFilter { get; set; }
+        public CourseFilterProperties? CourseFilterProperties { get; set; }
         public List<T> Items { get; set; } = new();
     }
 }

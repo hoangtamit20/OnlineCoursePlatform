@@ -39,7 +39,8 @@ namespace OnlineCoursePlatform.Services.CourseTypeServices.Implementations
                     data: createCourseType,
                     message: "Create course type success"
                 );
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError($"Trace : {ex.Message}");
                 return BaseReturnHelper<CreateCourseTypeResponseDto>.GenerateErrorResponse(
@@ -65,12 +66,14 @@ namespace OnlineCoursePlatform.Services.CourseTypeServices.Implementations
                 );
             }
             // handle delete course type
-            try{
+            try
+            {
                 await _courseTypeRepository.DeleteCourseTypeByIdAsync(courseType: courseTypeExists.Adapt<CourseType>());
                 return BaseReturnHelper<string>.GenerateSuccessResponse(
                     data: $"The course type with id : {idCourseType} was removed",
                     message: $"Delete course type success");
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 _logger.LogError($"Trace: {ex.Message}");
                 return BaseReturnHelper<string>.GenerateErrorResponse(
@@ -112,7 +115,7 @@ namespace OnlineCoursePlatform.Services.CourseTypeServices.Implementations
         public async Task<(int statusCode, BaseResponseWithData<UpdateCourseTypeResponseDto> result)> UpdateCourseTypeServiceAsync(
             UpdateCourseTypeRequestDto updateCourseTypeRequestDto)
         {
-            var courseTypeExists = await _courseTypeRepository.FindCourseTypeByIdAsync(updateCourseTypeRequestDto.Id);
+            var courseTypeExists = await _courseTypeRepository.FindCourseTypeEntityByIdAsync(updateCourseTypeRequestDto.Id);
             // If course type is exists
             if (courseTypeExists is null)
             {
@@ -123,14 +126,19 @@ namespace OnlineCoursePlatform.Services.CourseTypeServices.Implementations
                     data: null
                 );
             }
-            try{
-                var courseType = await _courseTypeRepository
-                .UpdateCourseTypeAsync(updateCourseTypeRequestDto.Adapt<CourseType>());
+            try
+            {
+                // Update the existing entity instead of creating a new one
+                courseTypeExists.Name = updateCourseTypeRequestDto.Name;
+                courseTypeExists.CreateDate = updateCourseTypeRequestDto.CreateDate;
+
+                var courseType = await _courseTypeRepository.UpdateCourseTypeAsync(courseTypeExists);
                 return BaseReturnHelper<UpdateCourseTypeResponseDto>.GenerateSuccessResponse(
                     data: courseType.Adapt<UpdateCourseTypeResponseDto>(),
                     message: "Update course type success"
                 );
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 return BaseReturnHelper<UpdateCourseTypeResponseDto>.GenerateErrorResponse(
                     errorMessage: $"Unable to update. {ex.Message}",

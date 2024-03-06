@@ -13,10 +13,6 @@ namespace OnlineCoursePlatform.Data.Entities
         public string Name { get; set; } = null!;
 
         [Required]
-        [StringLength(1000)]
-        public string StreamUrl { get; set; } = null!;
-
-        [Required]
         public int LessonIndex { get; set; }
 
         [StringLength(1000)]
@@ -43,6 +39,10 @@ namespace OnlineCoursePlatform.Data.Entities
         [ForeignKey("CourseId")]
         [InverseProperty("Lessons")]
         public virtual Course Course { get; set; } = null!;
+        [InverseProperty("Lesson")]
+        public virtual ICollection<LessonSubtitle> LessonSubtitles { get; set; } = new List<LessonSubtitle>();
+        [InverseProperty("Lesson")]
+        public virtual ICollection<LessonUrlStreaming> LessonUrlStreamings { get; set; } = new List<LessonUrlStreaming>();
 
     }
 

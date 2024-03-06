@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
+using OnlineCoursePlatform.Configurations;
 using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.Models.AuthModels;
 using OnlineCoursePlatform.Services.AuthServices.IAuthServices;
@@ -22,7 +23,7 @@ namespace OnlineCoursePlatform.Services.AuthServices
 
         public async Task<string> GenerateAccessTokenAsync(AppUser user)
         {
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:SecretKey"]!));
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration[AppSettingsConfig.JWT_SECRETKEY]!));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
             var userClaims = new List<Claim>()
             {
@@ -36,11 +37,11 @@ namespace OnlineCoursePlatform.Services.AuthServices
 
             var now = DateTime.UtcNow;
             var token = new JwtSecurityToken(
-                    issuer: _configuration["Jwt:Issuer"],
-                    audience: _configuration["Jwt:Audience"],
+                    issuer: _configuration[AppSettingsConfig.JWT_ISSUER],
+                    audience: _configuration[AppSettingsConfig.JWT_AUDIENCE],
                     claims: userClaims,
                     notBefore: now,
-                    expires: now.AddDays(1),
+                    expires: now.AddHours(1),
                     signingCredentials: credentials
                 );
             return new JwtSecurityTokenHandler().WriteToken(token);
@@ -116,8 +117,8 @@ namespace OnlineCoursePlatform.Services.AuthServices
             return new SecurityTokenDescriptor()
             {
                 Subject = new ClaimsIdentity(claims),
-                Issuer = _configuration["Jwt:Issuer"],
-                Audience = _configuration["Jwt:Audience"],
+                Issuer = _configuration[AppSettingsConfig.JWT_ISSUER],
+                Audience = _configuration[AppSettingsConfig.JWT_AUDIENCE],
                 NotBefore = now,
                 Expires = now.AddDays(1),
                 SigningCredentials = new SigningCredentials(

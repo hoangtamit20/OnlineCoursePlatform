@@ -34,6 +34,9 @@ namespace OnlineCoursePlatform.Repositories.CourseTypeRepositories
             }
         }
 
+        public async Task<CourseType?> FindCourseTypeEntityByIdAsync(int idCourseType)
+        => await _dbContext.CourseTypes.FindAsync(idCourseType);
+
         public async Task<CourseTypeInfoModel?> FindCourseTypeByIdAsync(int idCourseType)
         => (await _dbContext.CourseTypes.FindAsync(idCourseType)).Adapt<CourseTypeInfoModel>();
 

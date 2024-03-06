@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Google.Apis.Auth;
 using Newtonsoft.Json;
+using OnlineCoursePlatform.Configurations;
 using OnlineCoursePlatform.Constants;
 using OnlineCoursePlatform.DTOs.AuthDtos.Request;
 using OnlineCoursePlatform.Services.AuthServices;
@@ -20,8 +21,8 @@ namespace OnlineCoursePlatform.Models.Attributes
                 return new ValidationResult("Google token is required.");
             }
 
-            var clientId = _configuration["Google:ClientId"]!;
-            var clientIdMobile = _configuration["Google:ClientIdMobile"]!;
+            var clientId = _configuration[AppSettingsConfig.GOOGLE_CLIENTID_WEB]!;
+            var clientIdMobile = _configuration[AppSettingsConfig.GOOGLE_CLIENTID_MOBILE]!;
 
             try
             {
