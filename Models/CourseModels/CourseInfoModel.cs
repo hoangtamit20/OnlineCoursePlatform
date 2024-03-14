@@ -5,7 +5,6 @@ namespace OnlineCoursePlatform.Models.CourseModels
         public int Id { get; set; }
         public string CourseName { get; set; } = null!;
         public decimal Price { get; set; } = 0;
-        // public string? IntroduceStreamUrl { get; set; }
         public string? Thumbnail { get; set; }
         public bool? IsFree { get; set; }
         public int WeeklyViews { get; set; } = 0;

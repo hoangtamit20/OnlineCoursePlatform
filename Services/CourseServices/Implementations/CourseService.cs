@@ -217,15 +217,20 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
                 if (createCourseRequestDto.VideoFileUpload is not null)
                 {
                     // Get file path upload
-                    await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(method: HubConstants.ReceiveProgress, arg1: "Uploading video demo ....");
+                    await _hubContext.Clients
+                        .Client(connectionId: connectionId)
+                        .SendAsync(method: HubConstants.ReceiveProgress, 
+                            arg1: "Uploading video demo ....");
 
                     UploadAzureMediaRequestDto<Course> uploadAzureMediaRequestDto = new UploadAzureMediaRequestDto<Course>(
                         user: userExists, entity: course);
                     uploadAzureMediaRequestDto.FileToUpload = createCourseRequestDto.VideoFileUpload;
                     try
                     {
-                        uploadAzureMediaResponse = await _azureMediaService.UploadMediaWithOfflinePlayReadyAndWidevineProtectionServiceAsync(
-                            uploadAzureMediaRequestDto: uploadAzureMediaRequestDto, connectionId: connectionId);
+                        uploadAzureMediaResponse = await _azureMediaService
+                            .UploadMediaWithOfflinePlayReadyAndWidevineProtectionServiceAsync(
+                                uploadAzureMediaRequestDto: uploadAzureMediaRequestDto,
+                                connectionId: connectionId);
                     }
                     catch (Exception ex)
                     {
@@ -335,6 +340,8 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
                 data: course,
                 message: $"Get course with id : {courseId} successfully.");
         }
+
+        
 
 
         private string? GetUserIdFromJwt()

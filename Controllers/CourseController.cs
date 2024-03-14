@@ -137,33 +137,6 @@ namespace OnlineCoursePlatform.Controllers
             return StatusCode(statusCode: statusCode, value: result);
         }
 
-
-
-        // [HttpPost("demo-upload-video-to-azuremediaservice")]
-        // [Authorize]
-        // public async Task<IActionResult> UploadAzureMediaService(IFormFile file)
-        // {
-
-        //     var filePath = Path.GetTempFileName();
-
-        //     using (var stream = System.IO.File.Create(filePath))
-        //     {
-        //         await file.CopyToAsync(stream);
-        //     }
-
-        //     var (statusCode, result) = await _azureMediaService.UploadVideoFileToAzureMediaServiceAsync(filePathUpload: filePath);
-
-        //     if (statusCode == StatusCodes.Status200OK)
-        //     {
-        //         return Ok(result);
-        //     }
-        //     else
-        //     {
-        //         return StatusCode(statusCode, result);
-        //     }
-        // }
-
-
         [HttpGet("/api/v1/course/get-courses-recommend")]
         [Authorize]
         public async Task<IActionResult> GetCoursesWithReccomendation()
@@ -201,8 +174,26 @@ namespace OnlineCoursePlatform.Controllers
                     recommendedCourseIds.AddRange(courseIds);
                 }
 
+                if (recommendedCourseIds.Count < topN)
+                {
+                    var popularCourseIds = await _dbContext.Courses
+                        .Where(c => !_dbContext.UserCourseInteractions
+                            .Any(i => i.CourseId == c.Id
+                                && (userId != null ? i.UserId == userId : i.IpAddress == ipAddress)))
+                        .OrderByDescending(c => c.UserCourseInteractions
+                            .Sum(i => i.ViewScore + i.PurchaseScore + i.FavoriteScore + i.CommentScore))
+                        .Take(topN - recommendedCourseIds.Count)
+                        .Select(c => c.Id)
+                        .ToListAsync();
+
+                    recommendedCourseIds.AddRange(popularCourseIds);
+                }
+
                 return await _dbContext.Courses.Include(c => c.User)
                     .Where(c => recommendedCourseIds.Contains(c.Id))
+                    .OrderByDescending(c => c.UserCourseInteractions
+                        .Where(i => i.CourseId == c.Id)
+                        .Sum(i => i.ViewScore + i.PurchaseScore + i.FavoriteScore + i.CommentScore))
                     .Select(c => new CourseInfoModel()
                     {
                         Id = c.Id,

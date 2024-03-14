@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OnlineCoursePlatform.Base.BaseResponse;
-using OnlineCoursePlatform.Constants;
 using OnlineCoursePlatform.DTOs.UserDtos.Request;
 using OnlineCoursePlatform.DTOs.UserDtos.Response;
 using OnlineCoursePlatform.Services.UserServices.Interfaces;
