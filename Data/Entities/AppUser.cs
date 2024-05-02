@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
+using OnlineCoursePlatform.Data.Entities.Chat;
 
 namespace OnlineCoursePlatform.Data.Entities
 {
@@ -23,6 +24,10 @@ namespace OnlineCoursePlatform.Data.Entities
 
         [InverseProperty("User")]
         public virtual Cart Cart { get; set; } = null!;
+
+        [InverseProperty("Admin")]
+        public virtual GroupChat? AdminOfGroup { get; set; }
+
         [InverseProperty("User")]
         public virtual ICollection<UserRefreshToken> UserRefreshTokens { get; set; } = new List<UserRefreshToken>();
         [InverseProperty("User")]
@@ -31,5 +36,11 @@ namespace OnlineCoursePlatform.Data.Entities
         public virtual ICollection<Course> Courses { get; set; } = new List<Course>();
         [InverseProperty("User")]
         public virtual ICollection<UserCourseInteraction> UserCourseInteractions { get; set; } = new List<UserCourseInteraction>();
+        [InverseProperty("User")]
+        public virtual ICollection<UserOfGroupChat> UserOfGroupChats { get; set; } = new List<UserOfGroupChat>();
+        [InverseProperty("Sender")]
+        public virtual ICollection<MessageChat> MessageChats { get; set; } = new List<MessageChat>();
+        [InverseProperty("User")]
+        public virtual ICollection<WaitingMessageChat> WaitingMessageChats { get; set; } = new List<WaitingMessageChat>();
     }
 }

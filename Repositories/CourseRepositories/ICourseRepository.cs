@@ -21,6 +21,7 @@ namespace OnlineCoursePlatform.Repositories.CourseRepositories
         Task<Course> CreateCourseAsync(Course course);
         Task UpdateCourseAsync(Course course);
         Task AddRangeCourseSubtitlesAsync(List<CourseSubtitle> listItem);
-        Task AddCourseUrlStreamingAsync(CourseUrlSteaming courseUrlStreaming);
+        Task AddCourseUrlStreamingAsync(CourseUrlStreaming courseUrlStreaming);
+        Task<Course?> FindCourseByIdAsync(int courseId);
     }
 }

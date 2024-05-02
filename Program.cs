@@ -245,7 +245,7 @@ var app = builder.Build();
     app.UseCors(options =>
     {
         options
-            .WithOrigins("http://localhost:5173") // Replace with the origin of your client app
+            .WithOrigins("http://localhost:5173", "https://df8c-2405-4802-707b-1960-e971-2af3-b79-79a2.ngrok-free.app") // Replace with the origin of your client app
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials(); // This allows cookies, authorization headers etc.

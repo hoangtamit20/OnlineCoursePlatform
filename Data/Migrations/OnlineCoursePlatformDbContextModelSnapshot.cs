@@ -278,6 +278,150 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.ToTable("Carts");
                 });
 
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.AttachmentOfMessageChat", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("BlobContainerName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("FileType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MessageChatId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageChatId");
+
+                    b.ToTable("AttachmentOfMessageChat");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.GroupChat", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("AdminId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreateDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdminId")
+                        .IsUnique()
+                        .HasFilter("[AdminId] IS NOT NULL");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("GroupChat");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.MessageChat", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("GroupChatId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsIncludedFile")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MessageText")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SendDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupChatId");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("MessageChat");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.UserOfGroupChat", b =>
+                {
+                    b.Property<string>("GroupChatId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsBanned")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsLeave")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("JoinDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LeaveDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("GroupChatId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserOfGroupChats");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.WaitingMessageChat", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("MessageChatId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageChatId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("WaitingMessageChat");
+                });
+
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Course", b =>
                 {
                     b.Property<int>("Id")
@@ -454,7 +598,7 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.ToTable("CourseTypes");
                 });
 
-            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.CourseUrlSteaming", b =>
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.CourseUrlStreaming", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -513,7 +657,7 @@ namespace OnlineCoursePlatform.Data.Migrations
 
                     b.HasIndex("CourseId");
 
-                    b.ToTable("CourseUrlSteamings");
+                    b.ToTable("CourseUrlStreamings");
                 });
 
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Lesson", b =>
@@ -573,8 +717,16 @@ namespace OnlineCoursePlatform.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ContainerName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("DateAdd")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Language")
                         .IsRequired()
@@ -610,6 +762,10 @@ namespace OnlineCoursePlatform.Data.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<string>("IdentifierKey")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
                     b.Property<int>("LessonId")
                         .HasColumnType("int");
 
@@ -617,24 +773,37 @@ namespace OnlineCoursePlatform.Data.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
+                    b.Property<string>("PlayReadyUrlLicenseServer")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("SigningTokenKey")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("StreamUrlDashCmaf")
-                        .IsRequired()
+                    b.Property<string>("UrlSmoothStreaming")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<string>("StreamUrlDashCsf")
-                        .IsRequired()
+                    b.Property<string>("UrlStreamDashCmaf")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<string>("StreamUrlSmooth")
-                        .IsRequired()
+                    b.Property<string>("UrlStreamDashCsf")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("UrlStreamHlsCmaf")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("UrlStreamHlsCsf")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("WidevineUrlLicenseServer")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("Id");
 
@@ -702,11 +871,17 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.Property<bool>("IsRead")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsReceived")
+                        .HasColumnType("bit");
+
                     b.Property<DateTime?>("LastRead")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Message")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MessageChatId")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("OrderId")
@@ -864,6 +1039,83 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.AttachmentOfMessageChat", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Chat.MessageChat", "MessageChat")
+                        .WithMany("AttachmentOfMessageChats")
+                        .HasForeignKey("MessageChatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MessageChat");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.GroupChat", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.AppUser", "Admin")
+                        .WithOne("AdminOfGroup")
+                        .HasForeignKey("OnlineCoursePlatform.Data.Entities.Chat.GroupChat", "AdminId");
+
+                    b.Navigation("Admin");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.MessageChat", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Chat.GroupChat", "GroupChat")
+                        .WithMany("MessageChats")
+                        .HasForeignKey("GroupChatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.AppUser", "Sender")
+                        .WithMany("MessageChats")
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GroupChat");
+
+                    b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.UserOfGroupChat", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Chat.GroupChat", "GroupChat")
+                        .WithMany("UserOfGroupChats")
+                        .HasForeignKey("GroupChatId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.AppUser", "User")
+                        .WithMany("UserOfGroupChats")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("GroupChat");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.WaitingMessageChat", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Chat.MessageChat", "MessageChat")
+                        .WithMany("WaitingMessageChats")
+                        .HasForeignKey("MessageChatId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.AppUser", "User")
+                        .WithMany("WaitingMessageChats")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("MessageChat");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Course", b =>
                 {
                     b.HasOne("OnlineCoursePlatform.Data.Entities.CourseTopic", "CourseTopic")
@@ -905,10 +1157,10 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.Navigation("CourseType");
                 });
 
-            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.CourseUrlSteaming", b =>
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.CourseUrlStreaming", b =>
                 {
                     b.HasOne("OnlineCoursePlatform.Data.Entities.Course", "Course")
-                        .WithMany("CourseUrlSteamings")
+                        .WithMany("CourseUrlStreamings")
                         .HasForeignKey("CourseId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -990,16 +1242,38 @@ namespace OnlineCoursePlatform.Data.Migrations
 
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.AppUser", b =>
                 {
+                    b.Navigation("AdminOfGroup");
+
                     b.Navigation("Cart")
                         .IsRequired();
 
                     b.Navigation("Courses");
 
+                    b.Navigation("MessageChats");
+
                     b.Navigation("UserCourseInteractions");
 
                     b.Navigation("UserNotifications");
 
+                    b.Navigation("UserOfGroupChats");
+
                     b.Navigation("UserRefreshTokens");
+
+                    b.Navigation("WaitingMessageChats");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.GroupChat", b =>
+                {
+                    b.Navigation("MessageChats");
+
+                    b.Navigation("UserOfGroupChats");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.MessageChat", b =>
+                {
+                    b.Navigation("AttachmentOfMessageChats");
+
+                    b.Navigation("WaitingMessageChats");
                 });
 
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Course", b =>
@@ -1008,7 +1282,7 @@ namespace OnlineCoursePlatform.Data.Migrations
 
                     b.Navigation("CourseSubtitles");
 
-                    b.Navigation("CourseUrlSteamings");
+                    b.Navigation("CourseUrlStreamings");
 
                     b.Navigation("Lessons");
 

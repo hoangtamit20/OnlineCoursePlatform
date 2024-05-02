@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.DTOs.UserDtos.Request;
 using OnlineCoursePlatform.DTOs.UserDtos.Response;
+using OnlineCoursePlatform.Models.PagingAndFilter.Filter.User;
 using OnlineCoursePlatform.Services.UserServices.Interfaces;
 
 namespace OnlineCoursePlatform.Controllers
@@ -20,6 +21,34 @@ namespace OnlineCoursePlatform.Controllers
         {
             _userService = userService;
             _logger = logger;
+        }
+
+
+        [HttpGet("/api/v1/users")]
+        public async Task<IActionResult> GetAllUsers([FromQuery]UserFilterParams pagingAndFilterParams)
+        {
+            _logger.LogInformation("Starting get all user...");
+            var listResult = await _userService.GetAllUsersServiceAsync(
+                pagingAndFilterParams: pagingAndFilterParams);
+            var result = new BasePagedResultDto<UserInfoResponseDto>()
+            {
+                CurrentPage = listResult.CurrentPage,
+                TotalPages = listResult.TotalPages,
+                PageSize = listResult.PageSize,
+                TotalItems = listResult.TotalCount,
+                HasPrevious = listResult.HasPrevious,
+                HasNext = listResult.HasNext,
+                FirstFilter = pagingAndFilterParams.Query,
+                ObjFilterProperties = pagingAndFilterParams.UserFilterProperties,
+                Items = listResult,
+            };
+            _logger.LogInformation("Get all user successfully.");
+            return Ok(new BaseResponseWithData<BasePagedResultDto<UserInfoResponseDto>>()
+            {
+                Data = result,
+                Message = "Get all user successfuly",
+                IsSuccess = true
+            });
         }
 
 

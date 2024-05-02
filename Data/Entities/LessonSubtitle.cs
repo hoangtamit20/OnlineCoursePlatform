@@ -8,6 +8,8 @@ namespace OnlineCoursePlatform.Data.Entities
         [Key]
         public int Id { get; set; }
         public string Language { get; set; } = null!;
+        public string ContainerName { get; set; } = null!;
+        public string FileName { get; set; } = null!;
         public string UrlSubtitle { get; set; } = null!;
         public DateTime DateAdd { get; set; } = DateTime.UtcNow;
         public int LessonId { get; set; }

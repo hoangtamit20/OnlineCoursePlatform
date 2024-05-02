@@ -56,7 +56,7 @@ namespace OnlineCoursePlatform.Controllers
                 HasPrevious = listResult.HasPrevious,
                 HasNext = listResult.HasNext,
                 FirstFilter = courseFilterParams.Query,
-                CourseFilterProperties = courseFilterParams.CourseFilterProperties,
+                ObjFilterProperties = courseFilterParams.CourseFilterProperties,
                 Items = listResult,
             };
             return Ok(new BaseResponseWithData<BasePagedResultDto<CourseInfoModel>>()
@@ -83,7 +83,7 @@ namespace OnlineCoursePlatform.Controllers
                 HasNext = listResult.HasNext,
                 FirstFilter = courseSecondFilterParams.Query,
                 SecondFilter = courseSecondFilterParams.SecondQuery,
-                CourseFilterProperties = courseSecondFilterParams.CourseFilterProperties,
+                ObjFilterProperties = courseSecondFilterParams.CourseFilterProperties,
                 Items = listResult,
             };
             return Ok(new BaseResponseWithData<BasePagedSecondFilterResultDto<CourseInfoModel>>()

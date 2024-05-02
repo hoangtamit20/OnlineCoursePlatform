@@ -4,6 +4,8 @@ using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.DTOs.UserDtos.Request;
 using OnlineCoursePlatform.DTOs.UserDtos.Response;
 using OnlineCoursePlatform.Helpers;
+using OnlineCoursePlatform.Models.PagingAndFilter;
+using OnlineCoursePlatform.Models.PagingAndFilter.Filter.User;
 using OnlineCoursePlatform.Repositories.UserRepositories;
 using OnlineCoursePlatform.Services.UserServices.Interfaces;
 
@@ -24,6 +26,11 @@ namespace OnlineCoursePlatform.Services.UserServices.Implementations
             _logger = logger;
             _httpContextAccessor = httpContextAccessor;
         }
+
+
+        public async Task<PagedList<UserInfoResponseDto>> 
+            GetAllUsersServiceAsync(UserFilterParams pagingAndFilterParams)
+        => await _userRepository.GetAllUsersAsync(pagingAndFilterParams: pagingAndFilterParams);
 
         public async Task<(int statusCode, BaseResponseWithData<UserBaseInfoResponseDto> result)> GetUserBaseInfoServiceAsync()
         {

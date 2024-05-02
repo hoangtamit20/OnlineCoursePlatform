@@ -1,13 +1,9 @@
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace OnlineCoursePlatform.Data.Entities
+namespace OnlineCoursePlatform.DTOs.CourseDtos
 {
-    public class LessonUrlStreaming
+    public class BaseUploadVideo
     {
-        [Key]
-        public int Id { get; set; }
-        [StringLength(maximumLength: 1000)]
         public string? UrlStreamHlsCsf { get; set; }
         [StringLength(maximumLength: 1000)]
         public string? UrlStreamHlsCmaf { get; set; }
@@ -29,11 +25,5 @@ namespace OnlineCoursePlatform.Data.Entities
         public string? SigningTokenKey { get; set; }
         [StringLength(maximumLength: 250)]
         public string? IdentifierKey { get; set; }
-        [StringLength(maximumLength: 1000)]
-        public string? DownloadUrl { get; set; }
-        public int LessonId { get; set; }
-        [ForeignKey("LessonId")]
-        [InverseProperty("LessonUrlStreamings")]
-        public virtual Lesson Lesson { get; set; } = null!;
     }
 }

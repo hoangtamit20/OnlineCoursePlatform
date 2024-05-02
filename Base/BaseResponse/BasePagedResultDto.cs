@@ -11,7 +11,7 @@ namespace OnlineCoursePlatform.Base.BaseResponse
         public bool HasPrevious { get; set; }
         public bool HasNext { get; set; }
         public string? FirstFilter { get; set; }
-        public CourseFilterProperties? CourseFilterProperties { get; set; }
+        public object? ObjFilterProperties { get; set; }
         public List<T> Items { get; set; } = new();
     }
 }

@@ -209,6 +209,9 @@ namespace OnlineCoursePlatform.Repositories.CourseRepositories
                 throw new Exception($"An error occured while update course");
             }
         }
+        
+        public async Task<Course?> FindCourseByIdAsync(int courseId)
+        => await _dbContext.Courses.FindAsync(keyValues: courseId);
 
         public async Task AddRangeCourseSubtitlesAsync(List<CourseSubtitle> listItem)
         {
@@ -227,9 +230,9 @@ namespace OnlineCoursePlatform.Repositories.CourseRepositories
         public async Task<IDbContextTransaction> CreateTransactionAsync()
             => await _dbContext.Database.BeginTransactionAsync();
 
-        public async Task AddCourseUrlStreamingAsync(CourseUrlSteaming courseUrlStreaming)
+        public async Task AddCourseUrlStreamingAsync(CourseUrlStreaming courseUrlStreaming)
         {
-            _dbContext.CourseUrlSteamings.Add(entity: courseUrlStreaming);
+            _dbContext.CourseUrlStreamings.Add(entity: courseUrlStreaming);
             try
             {
                 await _dbContext.SaveChangesAsync();
@@ -329,7 +332,7 @@ namespace OnlineCoursePlatform.Repositories.CourseRepositories
                         Language = cs.Language,
                         UrlSubtitle = cs.UrlSubtitle
                     }).ToList(),
-                    CourseUrlStreaming = course.CourseUrlSteamings.Select(cs => new StreamingDto
+                    CourseUrlStreaming = course.CourseUrlStreamings.Select(cs => new StreamingDto
                     {
                         UrlStreamDashCsf = cs.UrlStreamDashCsf,
                         UrlStreamDashCmaf = cs.UrlStreamDashCmaf,

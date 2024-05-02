@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OnlineCoursePlatform.Data.Entities
 {
-    public class CourseUrlSteaming
+    public class CourseUrlStreaming
     {
         [Key]
         public int Id { get; set; }
@@ -31,7 +31,7 @@ namespace OnlineCoursePlatform.Data.Entities
         public string? IdentifierKey { get; set; }
         public int CourseId { get; set; }
         [ForeignKey("CourseId")]
-        [InverseProperty("CourseUrlSteamings")]
+        [InverseProperty("CourseUrlStreamings")]
         public virtual Course Course { get; set; } = null!;
     }
 }

@@ -1,6 +1,8 @@
 using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.DTOs.UserDtos.Request;
 using OnlineCoursePlatform.DTOs.UserDtos.Response;
+using OnlineCoursePlatform.Models.PagingAndFilter;
+using OnlineCoursePlatform.Models.PagingAndFilter.Filter.User;
 
 namespace OnlineCoursePlatform.Services.UserServices.Interfaces
 {
@@ -13,5 +15,8 @@ namespace OnlineCoursePlatform.Services.UserServices.Interfaces
             RemoveUserRolesRequestDto removeUserRolesRequestDto);
         
         Task<(int statusCode, BaseResponseWithData<UserBaseInfoResponseDto> result)> GetUserBaseInfoServiceAsync();
+
+        Task<PagedList<UserInfoResponseDto>> 
+            GetAllUsersServiceAsync(UserFilterParams pagingAndFilterParams);
     }
 }

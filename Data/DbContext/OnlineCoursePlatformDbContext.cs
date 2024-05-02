@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using OnlineCoursePlatform.Data.Entities;
+using OnlineCoursePlatform.Data.Entities.Chat;
 using OnlineCoursePlatform.Helpers.UrlHelpers;
 
 namespace OnlineCoursePlatform.Data.DbContext
@@ -30,11 +31,21 @@ namespace OnlineCoursePlatform.Data.DbContext
 
         public DbSet<Course> Courses { get; set; }
         public DbSet<CourseSubtitle> CourseSubtitles { get; set; }
-        public DbSet<CourseUrlSteaming> CourseUrlSteamings { get; set; }
+        public DbSet<CourseUrlStreaming> CourseUrlStreamings { get; set; }
         public DbSet<Lesson> Lessons { get; set; }
         public DbSet<LessonSubtitle> LessonSubtitles { get; set; }
         public DbSet<LessonUrlStreaming> LessonUrlStreamings { get; set; }
         public DbSet<Cart> Carts { get; set; }
+
+        public DbSet<AttachmentOfMessageChat> AttachmentOfMessageChats { get; set; }
+
+        public DbSet<GroupChat> GroupChats { get; set; }
+
+        public DbSet<MessageChat> MessageChats { get; set; }
+
+        public DbSet<UserOfGroupChat> UserOfGroupChats { get; set; }
+
+        public DbSet<WaitingMessageChat> WaitingMessageChats { get; set; }
 
         #endregion
 
@@ -102,6 +113,24 @@ namespace OnlineCoursePlatform.Data.DbContext
             builder.Entity<Cart>()
                 .HasIndex(c => new { c.UserId, c.CourseId })
                 .IsUnique();
+
+            builder.Entity<UserOfGroupChat>()
+                .HasKey(ug => new { ug.GroupChatId, ug.UserId });
+
+            builder.Entity<GroupChat>()
+                .HasIndex(g => g.Name);
+
+            builder.Entity<WaitingMessageChat>()
+                .HasOne(w => w.MessageChat)
+                .WithMany(m => m.WaitingMessageChats)
+                .HasForeignKey(w => w.MessageChatId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<WaitingMessageChat>()
+                .HasOne(w => w.User)
+                .WithMany(u => u.WaitingMessageChats)
+                .HasForeignKey(w => w.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
 
             foreach (var entityType in builder.Model.GetEntityTypes())
