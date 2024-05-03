@@ -1,6 +1,5 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using OnlineCoursePlatform.Constants;
@@ -32,6 +31,12 @@ namespace OnlineCoursePlatform.Hubs
         {
             await Clients.All
                 .SendAsync(HubConstants.ReceiveNotification, message);
+        }
+
+
+        public async Task ConversationChat(MessageRequestDto request)
+        {
+            var currentUser = await GetUserFromJwtAsync();
         }
 
         // public async Task SendMessage(string message)
@@ -195,5 +200,12 @@ namespace OnlineCoursePlatform.Hubs
                 .ToListAsync();
             return result;
         }
+    }
+
+    public class MessageRequestDto()
+    {
+        public string ReceiverId { get; set; } = null!;
+        public List<IFormFile>? Files { get; set; }
+        public string GroupChatId { get; set; } = null!;
     }
 }

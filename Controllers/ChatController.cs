@@ -13,10 +13,93 @@ namespace OnlineCoursePlatform.Controllers
     public class ChatController : ControllerBase
     {
         private readonly OnlineCoursePlatformDbContext _dbContext;
+        private readonly ILogger<ChatController> _logger;
 
-        public ChatController(OnlineCoursePlatformDbContext dbContext)
+        public ChatController(OnlineCoursePlatformDbContext dbContext, ILogger<ChatController> logger)
         {
             _dbContext = dbContext;
+            _logger = logger;
+        }
+
+
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetABC(string userId)
+        {
+            var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (currentUserId is not null)
+            {
+                // // check if current user and userid have exist group chat
+                // var conversationChatOfCurrentUser = await _dbContext.UserOfGroupChats.Include(uo => uo.GroupChat)
+                //     .Where(uo => uo.UserId == currentUserId && uo.GroupChat.Type == GroupChatType.Conversation)
+                //     .ToListAsync();
+
+                // foreach(var item in conversationChatOfCurrentUser)
+                // {
+                //     var isExist = await _dbContext.UserOfGroupChats.Where(uo => uo.GroupChatId == item.GroupChatId && uo.UserId == userId).FirstOrDefaultAsync();
+                //     if (isExist is not null)
+                //         break;
+                // }
+
+                var conversation = await _dbContext.GroupChats
+                    .Include(gc => gc.UserOfGroupChats)
+                    .Where(g =>
+                        g.Type == GroupChatType.Conversation &&
+                        g.UserOfGroupChats.Any(u => u.UserId == currentUserId) &&
+                        g.UserOfGroupChats.Any(u => u.UserId == userId))
+                    .FirstOrDefaultAsync();
+                var currentUser = await _dbContext.Users.FindAsync(currentUserId);
+                var userChat = await _dbContext.Users.FindAsync(userId);
+                if (conversation is not null && currentUser is not null  && userChat is not null)
+                {
+                    // get list chat
+                    var listChat = await _dbContext.MessageChats
+                        .Include(mc => mc.AttachmentOfMessageChats)
+                        .Where(mc => mc.GroupChatId == conversation.Id)
+                        .Select(mc => new 
+                        {
+                            UserId = mc.SenderId,
+                            Name = mc.SenderId == currentUserId ? currentUser.Name : userChat.Name,
+                            Picture = mc.SenderId == currentUserId ? currentUser.Picture : userChat.Picture,
+                            IsCurrent = mc.SenderId == currentUserId,
+                            MessageChatId = mc.Id,
+                            MessageText = mc.MessageText,
+                            File = mc.IsIncludedFile ? mc.AttachmentOfMessageChats.Select(at => new {
+                                FileUrl = at.FileUrl,
+                                FileName = at.FileName,
+                                FileType = at.FileType
+                            }).ToList() : null,
+                            SendDate = mc.SendDate
+                        })
+                        .OrderBy(g => g.SendDate)
+                        .ToListAsync();
+                }
+                // Create group chat
+                else
+                {
+                    var groupChat = new GroupChat()
+                    {
+                        Name = $"{currentUser?.Name} and {userChat?.Name}",
+                        Type = GroupChatType.Conversation
+                    };
+
+                    _dbContext.GroupChats.Add(groupChat);
+                    try
+                    {
+                        await _dbContext.SaveChangesAsync();
+                    }
+                    catch(Exception ex)
+                    {
+                        _logger.LogError(ex.Message);
+                        return StatusCode(StatusCodes.Status500InternalServerError);
+                    }
+                }
+            }
+
+
+            
+
+
         }
 
 

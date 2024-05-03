@@ -2,6 +2,8 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using DetectLanguage;
 using OnlineCoursePlatform.Data.Entities;
+using OnlineCoursePlatform.Data.Entities.Chat;
+using OnlineCoursePlatform.DTOs.FileUploadDtos.Request;
 using OnlineCoursePlatform.Models.SubtitleModels;
 using OnlineCoursePlatform.Models.UploadFileModels;
 
@@ -24,7 +26,7 @@ namespace OnlineCoursePlatform.Services.AzureBlobStorageServices
         {
             var uploadPublicFileModels = new List<UploadPublicFileModel>();
             // Get blob container of user
-    
+
             // Get blob container if not exists then create it.
             var containerClient = _blobServiceClient.GetBlobContainerClient($"container-{user.Email?.Split('@')[0]}");
             await containerClient.CreateIfNotExistsAsync();
@@ -93,6 +95,54 @@ namespace OnlineCoursePlatform.Services.AzureBlobStorageServices
             return uploadPublicFileModels;
         }
 
+        public async Task<List<UploadChatFileModel>> UploadChatFiles(
+            UploadChatFilesRequestDto requestDto,
+            AppUser user)
+        {
+            var uploadChatsFileModel = new List<UploadChatFileModel>();
+            // Get blob container of user
+
+            // Get blob container if not exists then create it.
+            var containerClient = _blobServiceClient.GetBlobContainerClient($"container-conversation-chat-{requestDto.GroupChatId}");
+            await containerClient.CreateIfNotExistsAsync();
+            // Set public permission for blob
+            await containerClient.SetAccessPolicyAsync(accessType: PublicAccessType.Blob);
+
+            // If no files are provided, return an empty list
+            if (requestDto.Files == null)
+            {
+                return uploadChatsFileModel;
+            }
+
+            foreach (var file in requestDto.Files)
+            {
+                // Determine the type of the file
+                string blobName = $"{Path.GetExtension(file.FileName)}{DateTime.Now}";
+                var blobClient = containerClient.GetBlobClient(blobName: blobName);
+                using (var stream = new MemoryStream())
+                {
+                    await file.CopyToAsync(target: stream);
+                    stream.Position = 0;
+                    var blobUploadOptions = new BlobUploadOptions
+                    {
+                        HttpHeaders = new BlobHttpHeaders
+                        {
+                            ContentType = file.ContentType,
+                        }
+                    };
+                    await blobClient.UploadAsync(content: stream, options: blobUploadOptions);
+                }
+                uploadChatsFileModel.Add(item: new UploadChatFileModel()
+                {
+                    BlobContainerName = blobClient.BlobContainerName,
+                    FileName = blobClient.Name,
+                    FileUrl = blobClient.Uri.ToString(),
+                    FileType = GetFileType(file: file)
+                });
+            }
+            return uploadChatsFileModel;
+        }
+
 
         public async Task DeleteFileFromAzureBlobStorageAsync(
             AppUser user,
@@ -124,6 +174,21 @@ namespace OnlineCoursePlatform.Services.AzureBlobStorageServices
             return languages.Select(item =>
                 new DetectSubtitleModel { Code = item.code, Name = item.name })
                     .FirstOrDefault(item => item.Code == languageCode);
+        }
+
+
+        public FileType GetFileType(IFormFile file)
+        {
+            var contentType = file.ContentType;
+            switch (contentType)
+            {
+                case var type when type.StartsWith("image"):
+                    return FileType.Image;
+                case var type when type.StartsWith("video"):
+                    return FileType.Video;
+                default:
+                    return FileType.Other;
+            }
         }
     }
 }
