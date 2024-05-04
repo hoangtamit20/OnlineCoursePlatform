@@ -38,15 +38,15 @@ namespace OnlineCoursePlatform.Controllers
             return BadRequest();
         }
 
-        [HttpDelete("/api/v1/files/delete")]
-        [Authorize]
-        public async Task<IActionResult> DeleteChatFiles()
-        {
-            var currentUser = await _userManager.GetUserAsync(this.User);
-            if (currentUser is null)
-                return Unauthorized();
+        // [HttpDelete("/api/v1/files/delete")]
+        // [Authorize]
+        // public async Task<IActionResult> DeleteChatFiles()
+        // {
+        //     var currentUser = await _userManager.GetUserAsync(this.User);
+        //     if (currentUser is null)
+        //         return Unauthorized();
             
-        }
+        // }
 
     }
 }

@@ -73,7 +73,7 @@ var builder = WebApplication.CreateBuilder(args);
         options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     }).AddJwtBearer(options =>
     {
-        options.SaveToken = true; // Thêm dòng này
+        options.SaveToken = true;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -84,9 +84,18 @@ var builder = WebApplication.CreateBuilder(args);
             ValidAudience = builder.Configuration[AppSettingsConfig.JWT_AUDIENCE],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration[AppSettingsConfig.JWT_SECRETKEY]!))
         };
-
         options.Events = new JwtBearerEvents
         {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/chatHub"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            },
             OnTokenValidated = context =>
             {
                 var jwt = context.SecurityToken as JsonWebToken;
@@ -216,8 +225,8 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 
 // add signalR
 builder.Services.AddSignalR();
-    // .AddAzureSignalR(
-    // connectionString: builder.Configuration[AppSettingsConfig.AZURE_SIGNALR_CONNECTIONSTRING]);
+// .AddAzureSignalR(
+// connectionString: builder.Configuration[AppSettingsConfig.AZURE_SIGNALR_CONNECTIONSTRING]);
 
 
 var app = builder.Build();

@@ -1,5 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using OnlineCoursePlatform.Constants;
@@ -9,14 +11,19 @@ using OnlineCoursePlatform.Data.Entities.Chat;
 
 namespace OnlineCoursePlatform.Hubs
 {
-    // [Authorize]
+    [Authorize]
     public class ChatHub : Hub
     {
         private readonly OnlineCoursePlatformDbContext _dbContext;
+        private readonly UserManager<AppUser> _userManager;
 
-        public ChatHub(OnlineCoursePlatformDbContext dbContext)
+        public static List<string> UserOnlineIds = new();
+        // public static List<string> UserOfflineIds = new();
+
+        public ChatHub(OnlineCoursePlatformDbContext dbContext, UserManager<AppUser> userManager)
         {
             _dbContext = dbContext;
+            _userManager = userManager;
         }
 
         public async Task SendMessageToUser(
@@ -87,24 +94,36 @@ namespace OnlineCoursePlatform.Hubs
         //     await base.OnConnectedAsync();
         // }
 
-        // public override async Task OnDisconnectedAsync(Exception exception)
-        // {
-        //     // Lấy UserId của người dùng từ context
-        //     var userId = Context.UserIdentifier;
+        public override async Task OnDisconnectedAsync(Exception? exception)
+        {
+            // // Lấy UserId của người dùng từ context
+            // var userId = Context.UserIdentifier;
 
-        //     // Xóa người dùng khỏi danh sách người dùng đang kết nối khi người dùng ngắt kết nối
-        //     _onlineUsers.Remove(userId);
+            // // Xóa người dùng khỏi danh sách người dùng đang kết nối khi người dùng ngắt kết nối
+            // _onlineUsers.Remove(userId);
 
-        //     // Gửi thông báo hoặc thực hiện các thao tác khác khi người dùng ngắt kết nối
+            // Gửi thông báo hoặc thực hiện các thao tác khác khi người dùng ngắt kết nối
+            if (Context.User is not null)
+            {
+                var currentUser = await _userManager.GetUserAsync(Context.User);
+                if (currentUser is not null)
+                    UserOnlineIds.Remove(currentUser.Id);
+            }
 
-        //     await base.OnDisconnectedAsync(exception);
-        // }
+            await base.OnDisconnectedAsync(exception);
+        }
 
 
 
 
         public override async Task OnConnectedAsync()
         {
+            if (Context.User is not null)
+            {
+                var current = await _userManager.GetUserAsync(Context.User);
+                if (current is not null)
+                    UserOnlineIds.Add(current.Id);
+            }
             var currentUser = await GetUserFromJwtAsync();
             if (currentUser != null)
             {
@@ -120,8 +139,8 @@ namespace OnlineCoursePlatform.Hubs
 
 
                 // Gửi thông báo toast cho người dùng với nội dung mới nếu có
-                    var toastMessage = $"You have {newMessage.Count} new messages and {newNofti.Count} new notifications";
-                    await Clients.Client(connectionId).SendAsync("ToastNewNotifications", toastMessage);
+                var toastMessage = $"You have {newMessage.Count} new messages and {newNofti.Count} new notifications";
+                await Clients.Client(connectionId).SendAsync("ToastNewNotifications", toastMessage);
 
                 // Gửi số lượng tin nhắn mới và thông báo mới chưa đọc cho người dùng
                 await Clients.Client(connectionId).SendAsync("SendQuantityOfUnReadMessages", unreadMessage.Count);

@@ -29,18 +29,6 @@ namespace OnlineCoursePlatform.Controllers
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (currentUserId is not null)
             {
-                // // check if current user and userid have exist group chat
-                // var conversationChatOfCurrentUser = await _dbContext.UserOfGroupChats.Include(uo => uo.GroupChat)
-                //     .Where(uo => uo.UserId == currentUserId && uo.GroupChat.Type == GroupChatType.Conversation)
-                //     .ToListAsync();
-
-                // foreach(var item in conversationChatOfCurrentUser)
-                // {
-                //     var isExist = await _dbContext.UserOfGroupChats.Where(uo => uo.GroupChatId == item.GroupChatId && uo.UserId == userId).FirstOrDefaultAsync();
-                //     if (isExist is not null)
-                //         break;
-                // }
-
                 var conversation = await _dbContext.GroupChats
                     .Include(gc => gc.UserOfGroupChats)
                     .Where(g =>
@@ -97,7 +85,7 @@ namespace OnlineCoursePlatform.Controllers
             }
 
 
-            
+            return Ok();
 
 
         }

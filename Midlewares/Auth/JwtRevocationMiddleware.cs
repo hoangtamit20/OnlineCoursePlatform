@@ -75,16 +75,27 @@ namespace OnlineCoursePlatform.Midlewares.Auth
         }
 
         // This method retrieves the access token from the "Authorization" header.
+        // This method retrieves the access token from the "Authorization" header or query string.
         private string? GetAccessToken(HttpContext context)
         {
-            if (!context.Request.Headers.TryGetValue("Authorization", out var accessTokenValue)
-                || !accessTokenValue.ToString().StartsWith("Bearer "))
+            // Attempt to retrieve token from "Authorization" header
+            if (context.Request.Headers.TryGetValue("Authorization", out var accessTokenValue)
+                && accessTokenValue.ToString().StartsWith("Bearer "))
             {
-                return null;
+                return accessTokenValue.ToString().Substring("Bearer ".Length).Trim();
             }
 
-            return accessTokenValue.ToString().Substring("Bearer ".Length).Trim();
+            // Attempt to retrieve token from query string
+            var accessTokenFromQuery = context.Request.Query["access_token"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(accessTokenFromQuery))
+            {
+                return accessTokenFromQuery;
+            }
+
+            // If neither "Authorization" header nor query string contains token, return null
+            return null;
         }
+
 
         // This method retrieves the user ID claim from the access token.
         private Claim? GetUserIdClaim(string accessToken)
@@ -97,7 +108,7 @@ namespace OnlineCoursePlatform.Midlewares.Auth
 
         // This method retrieves the user's refresh token from the database.
         private async Task<UserRefreshToken?> GetUserRefreshTokenAsync(
-            OnlineCoursePlatformDbContext dbContext, 
+            OnlineCoursePlatformDbContext dbContext,
             string accessToken, string userId)
         {
             return await dbContext.UserRefreshTokens
