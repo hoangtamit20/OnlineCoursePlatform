@@ -1,10 +1,14 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Data.DbContext;
+using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.Data.Entities.Chat;
+using OnlineCoursePlatform.DTOs.ChatDtos;
 
 namespace OnlineCoursePlatform.Controllers
 {
@@ -14,19 +18,28 @@ namespace OnlineCoursePlatform.Controllers
     {
         private readonly OnlineCoursePlatformDbContext _dbContext;
         private readonly ILogger<ChatController> _logger;
+        private readonly UserManager<AppUser> _userManager;
 
-        public ChatController(OnlineCoursePlatformDbContext dbContext, ILogger<ChatController> logger)
+        public ChatController(UserManager<AppUser> userManager, OnlineCoursePlatformDbContext dbContext, ILogger<ChatController> logger)
         {
             _dbContext = dbContext;
             _logger = logger;
+            _userManager = userManager;
         }
 
 
-        [HttpGet]
+        [HttpPost("/api/v1/chats/getconversationchats")]
         [Authorize]
-        public async Task<IActionResult> GetABC(string userId)
+        public async Task<IActionResult> GetConversationChats([FromBody] UserIdModel userIdModel)
         {
+            var userId = userIdModel.UserId;
+            if (userId is null)
+            {
+                return Unauthorized();
+            }
             var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var groupChatInfoDto = new GroupChatInfoDto();
+            var listChats = new List<ChatInfoDto>();
             if (currentUserId is not null)
             {
                 var conversation = await _dbContext.GroupChats
@@ -38,13 +51,25 @@ namespace OnlineCoursePlatform.Controllers
                     .FirstOrDefaultAsync();
                 var currentUser = await _dbContext.Users.FindAsync(currentUserId);
                 var userChat = await _dbContext.Users.FindAsync(userId);
-                if (conversation is not null && currentUser is not null  && userChat is not null)
+                if (currentUser is null)
+                {
+                    return Unauthorized();
+                }
+                if (userChat is null)
+                {
+                    return Unauthorized();
+                }
+                // If exist conversation between two user
+                if (conversation is not null && currentUser is not null && userChat is not null)
                 {
                     // get list chat
-                    var listChat = await _dbContext.MessageChats
+                    groupChatInfoDto.GroupChatId = conversation.Id;
+                    groupChatInfoDto.GroupChatName = conversation.Name;
+                    groupChatInfoDto.AdminId = conversation.AdminId;
+                    listChats = await _dbContext.MessageChats
                         .Include(mc => mc.AttachmentOfMessageChats)
                         .Where(mc => mc.GroupChatId == conversation.Id)
-                        .Select(mc => new 
+                        .Select(mc => new ChatInfoDto()
                         {
                             UserId = mc.SenderId,
                             Name = mc.SenderId == currentUserId ? currentUser.Name : userChat.Name,
@@ -52,31 +77,51 @@ namespace OnlineCoursePlatform.Controllers
                             IsCurrent = mc.SenderId == currentUserId,
                             MessageChatId = mc.Id,
                             MessageText = mc.MessageText,
-                            File = mc.IsIncludedFile ? mc.AttachmentOfMessageChats.Select(at => new {
+                            ChatFileInfos = mc.IsIncludedFile ? mc.AttachmentOfMessageChats.Select(at => new ChatFileInfo
+                            {
                                 FileUrl = at.FileUrl,
                                 FileName = at.FileName,
                                 FileType = at.FileType
-                            }).ToList() : null,
+                            }).ToList() : new List<ChatFileInfo>(),
                             SendDate = mc.SendDate
                         })
                         .OrderBy(g => g.SendDate)
                         .ToListAsync();
                 }
-                // Create group chat
+                // Create group chat and add user to user of group chat
                 else
                 {
                     var groupChat = new GroupChat()
                     {
-                        Name = $"{currentUser?.Name} and {userChat?.Name}",
+                        Name = $"{currentUser!.Name} and {userChat!.Name}",
                         Type = GroupChatType.Conversation
                     };
 
                     _dbContext.GroupChats.Add(groupChat);
                     try
                     {
+
+                        await _dbContext.SaveChangesAsync();
+                        groupChatInfoDto.GroupChatId = groupChat.Id;
+                        groupChatInfoDto.GroupChatName = groupChat.Name;
+                        // add user to userofgroupchat
+                        _dbContext.UserOfGroupChats.AddRange(entities:
+                        new List<UserOfGroupChat>()
+                        {
+                            new UserOfGroupChat()
+                            {
+                                GroupChatId = groupChat.Id,
+                                UserId = currentUser!.Id,
+                            },
+                            new UserOfGroupChat()
+                            {
+                                GroupChatId = groupChat.Id,
+                                UserId = userChat!.Id
+                            }
+                        });
                         await _dbContext.SaveChangesAsync();
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         _logger.LogError(ex.Message);
                         return StatusCode(StatusCodes.Status500InternalServerError);
@@ -84,10 +129,74 @@ namespace OnlineCoursePlatform.Controllers
                 }
             }
 
+            return Ok(new ChatResponseDto()
+            {
+                GroupChatInfoDto = groupChatInfoDto,
+                ChatInfoDtos = listChats
+            });
+        }
 
-            return Ok();
 
+        [HttpPost("getgroupchats")]
+        [Authorize]
+        public async Task<IActionResult> GetGroupChats([FromBody] GroupChatModel groupChat)
+        {
+            if (groupChat.UserOfGroupChats.IsNullOrEmpty())
+            {
+                return BadRequest();
+            }
+            var currentUser = await _userManager.GetUserAsync(this.User);
+            if (currentUser is null)
+            {
+                return Unauthorized();
+            }
+            if (string.IsNullOrEmpty(groupChat.GroupChatId))
+            {
+                var listUser = new List<AppUser>();
+                groupChat.UserOfGroupChats.ForEach(s =>
+                {
+                    var user = _userManager.FindByIdAsync(s).Result;
+                    if (user != null)
+                    {
+                        listUser.Add(user);
+                    }
+                });
+                // create group and add user to group
+                var group = new GroupChat()
+                {
+                    AdminId = currentUser.Id,
+                    Name = $"{currentUser.Name} and {listUser.Count} other peoples",
+                    Type = GroupChatType.Group
+                };
 
+                _dbContext.GroupChats.Add(group);
+                try
+                {
+                    await _dbContext.SaveChangesAsync();
+                    var userOfGroupChats = new List<UserOfGroupChat>()
+                    {
+                        new UserOfGroupChat()
+                        {
+                            GroupChatId = group.Id,
+                            UserId = currentUser.Id,
+                        }
+                    };
+
+                    userOfGroupChats.AddRange(listUser.Select(u => new UserOfGroupChat()
+                    {
+                        GroupChatId = group.Id,
+                        UserId = u.Id
+                    }).ToList());
+
+                    _dbContext.UserOfGroupChats.AddRange(userOfGroupChats);
+                    await _dbContext.SaveChangesAsync();
+                }
+                catch (Exception ex)
+                {
+
+                }
+
+            }
         }
 
 
