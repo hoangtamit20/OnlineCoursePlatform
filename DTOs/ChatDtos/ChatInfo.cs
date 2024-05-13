@@ -1,4 +1,5 @@
 using OnlineCoursePlatform.Data.Entities.Chat;
+using OnlineCoursePlatform.Models.UploadFileModels;
 
 namespace OnlineCoursePlatform.DTOs.ChatDtos
 {
@@ -23,6 +24,7 @@ namespace OnlineCoursePlatform.DTOs.ChatDtos
 
     public class ChatFileInfo
     {
+        public string Id { get; set; } = null!;
         public string FileUrl { get; set; } = string.Empty;
         public string FileName { get; set; } = string.Empty;
         public FileType FileType { get; set; }
@@ -45,5 +47,23 @@ namespace OnlineCoursePlatform.DTOs.ChatDtos
     {
         public string? GroupChatId { get; set; }
         public List<string> UserOfGroupChats { get; set; } = new();
+    }
+
+    // public class UploadFilesChatRequestDto
+    // {
+    //     public string GroupChatId { get; set; } = string.Empty;
+    //     public List<IFormFile> Files { get; set; } = new();
+    // }
+
+    public class UploadFilesChatResponseDto
+    {
+        public List<ChatFileInfo> ChatFileInfos { get; set; } = new();
+    }
+
+    public class AddChatRequestDto
+    {
+        public string GroupChatId { get; set; } = string.Empty;
+        public string MessageText { get; set; } = string.Empty;
+        public List<UploadChatFileModel> UploadChatFileModels { get; set; } = new();
     }
 }

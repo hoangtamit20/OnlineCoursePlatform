@@ -12,17 +12,17 @@ namespace OnlineCoursePlatform.Data.Entities.Chat
         public string FileUrl { get; set; } = string.Empty;
 
         [StringLength(maximumLength: 255)]
-        public required string BlobContainerName { get; set; }
+        public string BlobContainerName { get; set; } = null!;
 
         [StringLength(maximumLength: 255)]
-        public required string FileName { get; set; }
+        public string FileName { get; set; } = null!;
 
         public FileType FileType { get; set; }
 
-        public required string MessageChatId { get; set; }
+        public string MessageChatId { get; set; } = null!;
         [ForeignKey("MessageChatId")]
         [InverseProperty("AttachmentOfMessageChats")]
-        public virtual required MessageChat MessageChat { get; set; }
+        public virtual MessageChat MessageChat { get; set; } = null!;
     }
 
     public enum FileType

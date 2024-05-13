@@ -30,6 +30,7 @@ namespace OnlineCoursePlatform.Controllers
 
         [HttpPost("/api/v1/chats/getconversationchats")]
         [Authorize]
+        [ProducesResponseType(typeof(ChatResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetConversationChats([FromBody] UserIdModel userIdModel)
         {
             var userId = userIdModel.UserId;
@@ -190,13 +191,16 @@ namespace OnlineCoursePlatform.Controllers
 
                     _dbContext.UserOfGroupChats.AddRange(userOfGroupChats);
                     await _dbContext.SaveChangesAsync();
+                    return Ok();
+                    
                 }
                 catch (Exception ex)
                 {
-
+                    _logger.LogError(ex.Message);
+                    return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
                 }
-
             }
+            return BadRequest();
         }
 
 

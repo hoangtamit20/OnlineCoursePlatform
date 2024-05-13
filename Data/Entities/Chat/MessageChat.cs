@@ -15,15 +15,15 @@ namespace OnlineCoursePlatform.Data.Entities.Chat
 
         public bool IsIncludedFile { get; set; }
 
-        public required string GroupChatId { get; set; }
+        public string GroupChatId { get; set; } = null!;
         [ForeignKey("GroupChatId")] 
         [InverseProperty("MessageChats")]
-        public virtual required GroupChat GroupChat { get; set; }
+        public virtual GroupChat GroupChat { get; set; } = null!;
 
-        public required string SenderId { get; set; }
+        public string SenderId { get; set; } = null!;
         [ForeignKey("SenderId")]
         [InverseProperty("MessageChats")]
-        public virtual required AppUser Sender { get; set; }
+        public virtual AppUser Sender { get; set; } = null!;
 
         [InverseProperty("MessageChat")]
         public virtual ICollection<AttachmentOfMessageChat> AttachmentOfMessageChats { get; set; } = new List<AttachmentOfMessageChat>();
