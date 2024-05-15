@@ -35,6 +35,9 @@ namespace OnlineCoursePlatform.Data.DbContext
         public DbSet<Lesson> Lessons { get; set; }
         public DbSet<LessonSubtitle> LessonSubtitles { get; set; }
         public DbSet<LessonUrlStreaming> LessonUrlStreamings { get; set; }
+
+        public DbSet<OrderCourse> OrderCourses { get; set; }
+        
         public DbSet<Cart> Carts { get; set; }
 
         public DbSet<AttachmentOfMessageChat> AttachmentOfMessageChats { get; set; }

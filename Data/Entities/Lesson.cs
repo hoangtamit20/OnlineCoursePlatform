@@ -18,6 +18,10 @@ namespace OnlineCoursePlatform.Data.Entities
         [StringLength(1000)]
         public string? Thumbnail { get; set; }
 
+        public string? BlobContainerName { get; set; }
+
+        public string? ThumbnailName { get; set; }
+
         public DateTime? DateRelease { get; set; }
 
         public bool? IsPublic { get; set; }
@@ -43,7 +47,6 @@ namespace OnlineCoursePlatform.Data.Entities
         public virtual ICollection<LessonSubtitle> LessonSubtitles { get; set; } = new List<LessonSubtitle>();
         [InverseProperty("Lesson")]
         public virtual ICollection<LessonUrlStreaming> LessonUrlStreamings { get; set; } = new List<LessonUrlStreaming>();
-
     }
 
 }
