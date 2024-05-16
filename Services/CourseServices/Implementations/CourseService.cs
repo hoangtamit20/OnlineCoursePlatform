@@ -224,7 +224,7 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
                     await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(
                         method: HubConstants.ReceiveProgress,
                         arg1: "Upload subtitles ....");
-                    
+
                     var uploadSubtitles = await _azureBlobStorageService.UploadPublicFilesToAzureBlobStorageAsync(
                         user: userExists,
                         courseId: course.Id.ToString(),
@@ -482,7 +482,7 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
                     courseExists.IsPublic = courseUpdateRequestDto.IsPublic;
                     await _courseRepository.UpdateCourseAsync(course: courseExists);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     await _transaction.RollbackAsync();
                     _logger.LogError(ex.Message);

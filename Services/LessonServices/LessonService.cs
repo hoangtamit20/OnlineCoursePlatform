@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
+using OnlineCoursePlatform.Data.Entities.Order;
 using OnlineCoursePlatform.DTOs.AzureDtos.Request;
 using OnlineCoursePlatform.DTOs.LessonDtos;
 using OnlineCoursePlatform.Helpers;
@@ -63,8 +64,15 @@ namespace OnlineCoursePlatform.Services.LessonServices
                     data: null);
             }
             // check if current user have permission watch lesson of course
-            var courseOrdered = await _dbContext.OrderCourses.Where(oc => oc.CourseId == currentCourse.Id
-                && oc.UserId == currentCourse.UserId).FirstOrDefaultAsync();
+            var courseOrdered = await _dbContext.OrderDetails
+                .Include(od => od.OrderCourse)
+                .Include(od => od.OrderCourse)
+                .Where(od => od.CourseId == currentCourse.Id
+                    && od.OrderCourse.UserId == currentCourse.UserId
+                    && od.OrderCourse.Status == OrderStatus.Success
+                    && od.OrderDate <= DateTime.UtcNow 
+                    && od.ExpireDate >= DateTime.UtcNow)
+                .FirstOrDefaultAsync();
             if (courseOrdered == null && !currentCourse.IsPublic)
             {
                 return BaseReturnHelper<List<LessonResponseDto>>.GenerateErrorResponse(
@@ -127,8 +135,15 @@ namespace OnlineCoursePlatform.Services.LessonServices
                     message: "Get lesson detail failed",
                     data: null);
             }
-            var courseOrdered = await _dbContext.OrderCourses.Where(oc => oc.CourseId == currentCourse.Id
-                && oc.UserId == currentCourse.UserId).FirstOrDefaultAsync();
+            var courseOrdered = await _dbContext.OrderDetails
+                .Include(od => od.Course)
+                .Include(od => od.OrderCourse)
+                .Where(od => od.CourseId == currentCourse.Id
+                    && od.OrderCourse.UserId == currentCourse.UserId
+                    && od.OrderCourse.Status == OrderStatus.Success
+                    && od.OrderDate <= DateTime.UtcNow 
+                    && od.ExpireDate >= DateTime.UtcNow)
+                .FirstOrDefaultAsync();
             if (courseOrdered == null && !currentCourse.IsPublic 
                 && currentCourse.UserId != currentUser.Id)
             {

@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using OnlineCoursePlatform.Data.Entities.CourseDiscount;
 
 namespace OnlineCoursePlatform.Data.Entities
 {
@@ -48,5 +49,7 @@ namespace OnlineCoursePlatform.Data.Entities
         public virtual ICollection<CourseSubtitle> CourseSubtitles { get; set; } = new List<CourseSubtitle>();
         [InverseProperty("Course")]
         public virtual ICollection<CourseUrlStreaming> CourseUrlStreamings { get; set; } = new List<CourseUrlStreaming>();
+        // [InverseProperty("Course")]
+        // public virtual ICollection<CoursePromotion> CoursePromotions { get; set; } = new List<CoursePromotion>();
     }
 }

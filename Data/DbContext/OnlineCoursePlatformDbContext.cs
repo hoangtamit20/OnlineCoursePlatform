@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.Data.Entities.Chat;
+using OnlineCoursePlatform.Data.Entities.Order;
+using OnlineCoursePlatform.Data.Entities.PaymentCollection;
 using OnlineCoursePlatform.Helpers.UrlHelpers;
 
 namespace OnlineCoursePlatform.Data.DbContext
@@ -37,6 +39,7 @@ namespace OnlineCoursePlatform.Data.DbContext
         public DbSet<LessonUrlStreaming> LessonUrlStreamings { get; set; }
 
         public DbSet<OrderCourse> OrderCourses { get; set; }
+        public DbSet<OrderDetail> OrderDetails { get; set; }
         
         public DbSet<Cart> Carts { get; set; }
 
@@ -50,6 +53,13 @@ namespace OnlineCoursePlatform.Data.DbContext
 
         public DbSet<WaitingMessageChat> WaitingMessageChats { get; set; }
 
+        public DbSet<Merchant> Merchants { get; set; }
+
+        public DbSet<Payment> Payments { get; set; }
+        public DbSet<PaymentDestination> PaymentDestinations { get; set; }
+        public DbSet<PaymentNotification> PaymentNotifications { get; set; }
+        public DbSet<PaymentSignature> PaymentSignatures { get; set; }
+        public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
         #endregion
 
 #pragma warning disable CS8618 // Required by Entity Framework

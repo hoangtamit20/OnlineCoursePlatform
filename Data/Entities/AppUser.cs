@@ -2,6 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
 using OnlineCoursePlatform.Data.Entities.Chat;
+using OnlineCoursePlatform.Data.Entities.Order;
 
 namespace OnlineCoursePlatform.Data.Entities
 {
@@ -42,5 +43,7 @@ namespace OnlineCoursePlatform.Data.Entities
         public virtual ICollection<MessageChat> MessageChats { get; set; } = new List<MessageChat>();
         [InverseProperty("User")]
         public virtual ICollection<WaitingMessageChat> WaitingMessageChats { get; set; } = new List<WaitingMessageChat>();
+        [InverseProperty("User")]
+        public virtual ICollection<OrderCourse> OrderCourses { get; set; } = new List<OrderCourse>();
     }
 }
