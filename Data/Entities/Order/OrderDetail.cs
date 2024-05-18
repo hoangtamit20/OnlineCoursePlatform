@@ -9,7 +9,7 @@ namespace OnlineCoursePlatform.Data.Entities.Order
     public partial class OrderDetail
     {
         [Key]
-        public int OrderCourseId { get; set; }
+        public string OrderCourseId { get; set; } = null!;
 
         [Key]
         public int CourseId { get; set; }

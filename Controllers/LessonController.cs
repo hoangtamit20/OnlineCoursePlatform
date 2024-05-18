@@ -32,19 +32,19 @@ namespace OnlineCoursePlatform.Controllers
             
         }
 
-        [HttpGet("/api/v1/lessons/lessonsofcourse")]
-        [Authorize]
-        public async Task<IActionResult> GetLessonsOfCourse([FromBody] GetLessonsOfCourseRequestDto requestDto)
-        {
-            // 
-        }
+        // [HttpGet("/api/v1/lessons/lessonsofcourse")]
+        // [Authorize]
+        // public async Task<IActionResult> GetLessonsOfCourse([FromBody] GetLessonsOfCourseRequestDto requestDto)
+        // {
+        //     // 
+        // }
 
-        [HttpGet("/api/v1/lessons/{lessonId}")]
-        [Authorize(Roles = $"{RolesConstant.Learner}")]
-        public async Task<IActionResult> GetLesson(int lessonId)
-        {
-            return Ok();
-        }
+        // [HttpGet("/api/v1/lessons/{lessonId}")]
+        // [Authorize(Roles = $"{RolesConstant.Learner}")]
+        // public async Task<IActionResult> GetLesson(int lessonId)
+        // {
+        //     return Ok();
+        // }
 
         [HttpPost("/api/v1/lesson/addlesson")]
         [Authorize(Roles = $"{RolesConstant.Publisher}")]

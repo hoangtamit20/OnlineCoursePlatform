@@ -20,7 +20,7 @@ namespace OnlineCoursePlatform.Data.Entities.PaymentCollection
         public decimal? RequiredAmount { get; set; }
 
         [Column(TypeName = "datetime")]
-        public DateTime PaymentDate { get; set; } = DateTime.Now;
+        public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
 
         [Column(TypeName = "datetime")]
         public DateTime? ExpireDate { get; set; }
@@ -41,7 +41,7 @@ namespace OnlineCoursePlatform.Data.Entities.PaymentCollection
 
         public string? LastUpdateBy { get; set; }
 
-        public string MerchantId { get; set; } = null!;
+        public string? MerchantId { get; set; }
 
         public string PaymentDestinationId { get; set; } = null!;
 

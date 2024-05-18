@@ -8,6 +8,7 @@ namespace OnlineCoursePlatform.DTOs.CourseDtos.Request
     {
         [Required(ErrorMessage = "{0} is required")]
         public string Name { get; set; } = null!;
+        public int ExpirationDay { get; set; } = 30;
         [Column(TypeName = "decimal(18,2)")]
         public decimal Price { get; set; } = 0;
         [StringLength(maximumLength: 1000, ErrorMessage = "{0} must be less {1} characters.")]

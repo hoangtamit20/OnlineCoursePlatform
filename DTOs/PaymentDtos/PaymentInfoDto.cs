@@ -8,12 +8,12 @@ namespace OnlineCoursePlatform.DTOs.PaymentDtos
         public string? PaymentCurrency { get; set; }
         public decimal? RequiredAmount { get; set; }
         [JsonIgnore]
-        public DateTime? PaymentDate { get; set; } = DateTime.UtcNow;
+        public DateTime PaymentDate { get; set; } = DateTime.UtcNow;
         [JsonIgnore]
-        public DateTime? ExpireDate { get; set; } = DateTime.Now.AddMinutes(50);
+        public DateTime? ExpireDate { get; set; } = DateTime.UtcNow.AddMinutes(50);
         public string? PaymentLanguage { get; set; }
         [JsonIgnore]
-        public string? MerchantId { get; set; } = null!;
+        public string? MerchantId { get; set; }
         public string PaymentDestinationId { get; set; } = null!;
         public string OrderId { get; set; } = null!;
     }

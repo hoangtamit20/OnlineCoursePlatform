@@ -94,6 +94,7 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
                 var course = new Course()
                 {
                     Name = createCourseRequestDto.Name,
+                    ExpirationDay = createCourseRequestDto.ExpirationDay,
                     Price = createCourseRequestDto.Price,
                     CourseTopicId = createCourseRequestDto.CourseTopicId,
                     UserId = userExists.Id,

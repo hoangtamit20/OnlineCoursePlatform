@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using OnlineCoursePlatform.Data.Entities;
+using OnlineCoursePlatform.Data.Entities.CartCollection;
 using OnlineCoursePlatform.Data.Entities.Chat;
 using OnlineCoursePlatform.Data.Entities.Order;
 using OnlineCoursePlatform.Data.Entities.PaymentCollection;
@@ -40,8 +41,10 @@ namespace OnlineCoursePlatform.Data.DbContext
 
         public DbSet<OrderCourse> OrderCourses { get; set; }
         public DbSet<OrderDetail> OrderDetails { get; set; }
-        
+
         public DbSet<Cart> Carts { get; set; }
+
+        public DbSet<CartItem> CartItems { get; set; }
 
         public DbSet<AttachmentOfMessageChat> AttachmentOfMessageChats { get; set; }
 
@@ -111,21 +114,33 @@ namespace OnlineCoursePlatform.Data.DbContext
                 c.HasIndex(c => c.Name).IsUnique();
             });
 
+            builder.Entity<OrderDetail>()
+                .HasOne(od => od.OrderCourse)
+                .WithMany(oc => oc.OrderDetails)
+                .HasForeignKey(od => od.OrderCourseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<OrderDetail>()
+                .HasOne(od => od.Course)
+                .WithMany(c => c.OrderDetails)
+                .HasForeignKey(od => od.CourseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             builder.Entity<Cart>()
                 .HasOne(c => c.User)
                 .WithOne(u => u.Cart)
                 .HasForeignKey<Cart>(c => c.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
 
-            builder.Entity<Cart>()
-                .HasOne(c => c.Course)
-                .WithMany(co => co.Carts)
-                .HasForeignKey(c => c.CourseId)
-                .OnDelete(DeleteBehavior.NoAction);
+            // builder.Entity<Cart>()
+            //     .HasOne(c => c.Course)
+            //     .WithMany(co => co.Carts)
+            //     .HasForeignKey(c => c.CourseId)
+            //     .OnDelete(DeleteBehavior.NoAction);
 
-            builder.Entity<Cart>()
-                .HasIndex(c => new { c.UserId, c.CourseId })
-                .IsUnique();
+            // builder.Entity<Cart>()
+            //     .HasIndex(c => new { c.UserId, c.CourseId })
+            //     .IsUnique();
 
             builder.Entity<UserOfGroupChat>()
                 .HasKey(ug => new { ug.GroupChatId, ug.UserId });

@@ -1,4 +1,3 @@
-using System.Net;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -9,6 +8,7 @@ using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Constants;
 using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
+using OnlineCoursePlatform.Data.Entities.Order;
 using OnlineCoursePlatform.DTOs.CourseDtos.Request;
 using OnlineCoursePlatform.DTOs.CourseDtos.Response;
 using OnlineCoursePlatform.Hubs;
@@ -26,12 +26,15 @@ namespace OnlineCoursePlatform.Controllers
         private readonly IHubContext<ProgressHub> _hubContext;
         private readonly OnlineCoursePlatformDbContext _dbContext;
 
+        private readonly UserManager<AppUser> _userManager;
+
         private readonly IHttpContextAccessor _httpAcessor;
         public CourseController(
             ICourseService courseService,
             IHubContext<ProgressHub> hubContext,
             OnlineCoursePlatformDbContext dbContext,
-            IHttpContextAccessor httpAcessor
+            IHttpContextAccessor httpAcessor,
+            UserManager<AppUser> userManager
             // IAzureMediaService azureMediaService
             )
         {
@@ -39,6 +42,7 @@ namespace OnlineCoursePlatform.Controllers
             _hubContext = hubContext;
             _dbContext = dbContext;
             _httpAcessor = httpAcessor;
+            _userManager = userManager;
             // _azureMediaService = azureMediaService;
         }
 
@@ -232,5 +236,35 @@ namespace OnlineCoursePlatform.Controllers
                     .ToListAsync();
             }
         }
+
+
+        [HttpGet("/api/v1/course/checkpurchased/{courseId}")]
+        [Authorize]
+        public async Task<IActionResult> CheckPurchasedCourse(int courseId)
+        {
+            var currentUser = await _userManager.GetUserAsync(this.User);
+            if (currentUser is null)
+            {
+                return Unauthorized();
+            }
+
+            var purchasedCourse = await _dbContext.OrderDetails
+                .Include(od => od.OrderCourse)
+                .Where(od => od.CourseId == courseId
+                    && od.OrderCourse.UserId == currentUser.Id
+                    && od.OrderCourse.Status == OrderStatus.Success
+                    && od.ExpireDate >= DateTime.UtcNow).FirstOrDefaultAsync();
+            return Ok(new BaseResponseWithData<CheckCoursePurchasedDto>()
+            {
+                Data = new CheckCoursePurchasedDto() { IsCoursePurchased = purchasedCourse == null },
+                Message = "Check course purchased successfully",
+                IsSuccess = true
+            });
+        }
+    }
+
+    public class CheckCoursePurchasedDto
+    {
+        public bool IsCoursePurchased { get; set; }
     }
 }

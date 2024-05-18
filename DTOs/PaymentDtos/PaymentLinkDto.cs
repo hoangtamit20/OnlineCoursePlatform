@@ -5,7 +5,7 @@ namespace OnlineCoursePlatform.DTOs.PaymentDtos
         /// <summary>
         /// Mã giao dịch yêu cầu thanh toán
         /// </summary>
-        public int PaymentId { get; set; }
+        public string PaymentId { get; set; } = null!;
 
         /// <summary>
         /// 

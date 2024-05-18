@@ -248,14 +248,8 @@ namespace OnlineCoursePlatform.Data.Migrations
 
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Cart", b =>
                 {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("CourseId")
-                        .HasColumnType("int");
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("datetime2");
@@ -267,15 +261,28 @@ namespace OnlineCoursePlatform.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CourseId");
-
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.HasIndex("UserId", "CourseId")
-                        .IsUnique();
-
                     b.ToTable("Carts");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.CartCollection.CartItem", b =>
+                {
+                    b.Property<string>("CartId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateAdd")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("CartId", "CourseId");
+
+                    b.HasIndex("CourseId");
+
+                    b.ToTable("CartItems");
                 });
 
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.AttachmentOfMessageChat", b =>
@@ -444,11 +451,14 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.Property<DateTime>("CreateDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("ExpirationDay")
+                        .HasColumnType("int");
+
                     b.Property<string>("FileThumbnailName")
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
-                    b.Property<bool?>("IsFree")
+                    b.Property<bool>("IsFree")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsPublic")
@@ -668,6 +678,9 @@ namespace OnlineCoursePlatform.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BlobContainerName")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("CourseId")
                         .HasColumnType("int");
 
@@ -695,6 +708,9 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.Property<string>("Thumbnail")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ThumbnailName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("UploadCost")
                         .HasColumnType("decimal(19,0)");
@@ -810,6 +826,315 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.HasIndex("LessonId");
 
                     b.ToTable("LessonUrlStreamings");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Order.Merchant", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MerchantIpnUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("MerchantName")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("MerchantReturnUrl")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("MerchantWebLink")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("SecretKey")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Merchant");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Order.OrderCourse", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("decimal(19, 2)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("OrderCourse");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Order.OrderDetail", b =>
+                {
+                    b.Property<string>("OrderCourseId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ExpireDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(19, 2)");
+
+                    b.HasKey("OrderCourseId", "CourseId");
+
+                    b.HasIndex("CourseId");
+
+                    b.ToTable("OrderDetail");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.PaymentCollection.Payment", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ExpireDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<DateTime?>("LastUpdateAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastUpdateBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MerchantId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("OrderCourseId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal?>("PaidAmount")
+                        .HasColumnType("decimal(19, 2)");
+
+                    b.Property<string>("PaymentContent")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("PaymentCurrency")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("PaymentDestinationId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("PaymentLanguage")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("PaymentLastMessage")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("PaymentStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("RequiredAmount")
+                        .HasColumnType("decimal(19, 2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MerchantId");
+
+                    b.HasIndex("OrderCourseId");
+
+                    b.HasIndex("PaymentDestinationId");
+
+                    b.ToTable("Payment");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.PaymentCollection.PaymentDestination", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("CreateAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("CreateBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("DesLogo")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("DesName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("DesShortName")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("DesSortIndex")
+                        .HasColumnType("int");
+
+                    b.Property<bool?>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastUpdateAt")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("LastUpdateBy")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ParentId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.ToTable("PaymentDestination");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.PaymentCollection.PaymentNotification", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("NotificationAmount")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NotificationContent")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NotificationDate")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NotificationMessage")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NotificationResponseDate")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NotificationSignature")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NotificationStatus")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PaymentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("PaymentRefId")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("PaymentNotification");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.PaymentCollection.PaymentSignature", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<bool>("IsValid")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PaymentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("SignAlgo")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("SignDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("SignOwn")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
+                    b.Property<string>("SignValue")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("PaymentSignature");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.PaymentCollection.PaymentTransaction", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("PaymentId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<decimal?>("TranAmount")
+                        .HasColumnType("decimal(19, 2)");
+
+                    b.Property<DateTime?>("TranDate")
+                        .HasColumnType("datetime");
+
+                    b.Property<string>("TranMessage")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("TranPayload")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TranStatus")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PaymentId");
+
+                    b.ToTable("PaymentTransaction");
                 });
 
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.UserCourseInteraction", b =>
@@ -1022,21 +1347,32 @@ namespace OnlineCoursePlatform.Data.Migrations
 
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Cart", b =>
                 {
-                    b.HasOne("OnlineCoursePlatform.Data.Entities.Course", "Course")
-                        .WithMany("Carts")
-                        .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
                     b.HasOne("OnlineCoursePlatform.Data.Entities.AppUser", "User")
                         .WithOne("Cart")
                         .HasForeignKey("OnlineCoursePlatform.Data.Entities.Cart", "UserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
-                    b.Navigation("Course");
-
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.CartCollection.CartItem", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Cart", "Cart")
+                        .WithMany("CartItems")
+                        .HasForeignKey("CartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Course", "Course")
+                        .WithMany("CartItems")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Cart");
+
+                    b.Navigation("Course");
                 });
 
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.AttachmentOfMessageChat", b =>
@@ -1201,6 +1537,103 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.Navigation("Lesson");
                 });
 
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Order.OrderCourse", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.AppUser", "User")
+                        .WithMany("OrderCourses")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Order.OrderDetail", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Course", "Course")
+                        .WithMany("OrderDetails")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Order.OrderCourse", "OrderCourse")
+                        .WithMany("OrderDetails")
+                        .HasForeignKey("OrderCourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("OrderCourse");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.PaymentCollection.Payment", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Order.Merchant", "Merchant")
+                        .WithMany("Payments")
+                        .HasForeignKey("MerchantId");
+
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Order.OrderCourse", "OrderCourse")
+                        .WithMany("Payments")
+                        .HasForeignKey("OrderCourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.PaymentCollection.PaymentDestination", "PaymentDestination")
+                        .WithMany("Payments")
+                        .HasForeignKey("PaymentDestinationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Merchant");
+
+                    b.Navigation("OrderCourse");
+
+                    b.Navigation("PaymentDestination");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.PaymentCollection.PaymentDestination", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.PaymentCollection.PaymentDestination", "Parent")
+                        .WithMany("InverseParent")
+                        .HasForeignKey("ParentId");
+
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.PaymentCollection.PaymentNotification", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.PaymentCollection.Payment", "Payment")
+                        .WithMany("PaymentNotifications")
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Payment");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.PaymentCollection.PaymentSignature", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.PaymentCollection.Payment", "Payment")
+                        .WithMany("PaymentSignatures")
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Payment");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.PaymentCollection.PaymentTransaction", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.PaymentCollection.Payment", "Payment")
+                        .WithMany("PaymentTransactions")
+                        .HasForeignKey("PaymentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Payment");
+                });
+
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.UserCourseInteraction", b =>
                 {
                     b.HasOne("OnlineCoursePlatform.Data.Entities.Course", "Course")
@@ -1251,6 +1684,8 @@ namespace OnlineCoursePlatform.Data.Migrations
 
                     b.Navigation("MessageChats");
 
+                    b.Navigation("OrderCourses");
+
                     b.Navigation("UserCourseInteractions");
 
                     b.Navigation("UserNotifications");
@@ -1260,6 +1695,11 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.Navigation("UserRefreshTokens");
 
                     b.Navigation("WaitingMessageChats");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Cart", b =>
+                {
+                    b.Navigation("CartItems");
                 });
 
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Chat.GroupChat", b =>
@@ -1278,13 +1718,15 @@ namespace OnlineCoursePlatform.Data.Migrations
 
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Course", b =>
                 {
-                    b.Navigation("Carts");
+                    b.Navigation("CartItems");
 
                     b.Navigation("CourseSubtitles");
 
                     b.Navigation("CourseUrlStreamings");
 
                     b.Navigation("Lessons");
+
+                    b.Navigation("OrderDetails");
 
                     b.Navigation("UserCourseInteractions");
                 });
@@ -1304,6 +1746,34 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.Navigation("LessonSubtitles");
 
                     b.Navigation("LessonUrlStreamings");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Order.Merchant", b =>
+                {
+                    b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.Order.OrderCourse", b =>
+                {
+                    b.Navigation("OrderDetails");
+
+                    b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.PaymentCollection.Payment", b =>
+                {
+                    b.Navigation("PaymentNotifications");
+
+                    b.Navigation("PaymentSignatures");
+
+                    b.Navigation("PaymentTransactions");
+                });
+
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.PaymentCollection.PaymentDestination", b =>
+                {
+                    b.Navigation("InverseParent");
+
+                    b.Navigation("Payments");
                 });
 #pragma warning restore 612, 618
         }

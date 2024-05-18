@@ -3,6 +3,7 @@ namespace OnlineCoursePlatform.Configurations
     public class VNPayConfig
     {
         public static string ConfigName => "VnPay";
+        public string Version { get; set; } = string.Empty;
         public string TmnCode { get; set; } = string.Empty;
         public string HashSecret { get; set; } = string.Empty;
         public string ReturnUrl { get; set; } = string.Empty;

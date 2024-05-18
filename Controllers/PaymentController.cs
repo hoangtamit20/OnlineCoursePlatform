@@ -1,17 +1,21 @@
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
+using Mapster;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Configurations;
+using OnlineCoursePlatform.Constants;
 using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.Data.Entities.Order;
+using OnlineCoursePlatform.Data.Entities.PaymentCollection;
 using OnlineCoursePlatform.DTOs.PaymentDtos;
 
 namespace OnlineCoursePlatform.Controllers
@@ -24,17 +28,19 @@ namespace OnlineCoursePlatform.Controllers
         private readonly VNPayConfig _vnpayConfig;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly UserManager<AppUser> _userManager;
-        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly ILogger<PaymentController> _logger;
+        // private readonly IHubContext<NotificationHub> _hubContext;
 
         public PaymentController(
             OnlineCoursePlatformDbContext context,
             IHttpContextAccessor httpContextAccessor,
             IOptions<VNPayConfig> vnpayConfig,
             UserManager<AppUser> userManager,
-            IHubContext<NotificationHub> hubContext
+            ILogger<PaymentController> logger
+            // IHubContext<NotificationHub> hubContext
             )
-        => (_context, _httpContextAccessor, _vnpayConfig, _userManager, _hubContext)
-        = (context, httpContextAccessor, vnpayConfig.Value, userManager, hubContext);
+        => (_context, _httpContextAccessor, _vnpayConfig, _userManager, _logger)
+        = (context, httpContextAccessor, vnpayConfig.Value, userManager, logger);
 
         /// <summary>
         /// Payment order with VnPay, Momo, ZaloPay (Authorize)
@@ -42,17 +48,18 @@ namespace OnlineCoursePlatform.Controllers
         /// <param name="paymentInfoDto"></param>
         /// <returns></returns>
         /// <remarks>
-        ///     POST : PaymentDestinationId {1 - VNPAY; 2 - MOMO; 3 - ZALOPAY}
+        ///     POST : You can get the payment destination id from api: /api/v1/payments/paymentdestinations corresponding to the payment method you want
         /// {
         ///     "paymentContent": "THANH TOAN DON HANG 0001",
         ///     "paymentCurrency": "VND",
         ///     "requiredAmount": 200000,
         ///     "paymentLanguage": "VN",
-        ///     "paymentDestinationId": 1,
-        ///     "orderId": 1
+        ///     "merchantId": "MerchantVNPay"
+        ///     "paymentDestinationId": "df023f81-8346-4f40-9b12-cca7eb5dec42",
+        ///     "orderId": guid string
         /// }
         /// </remarks>
-        [HttpPost]
+        [HttpPost("/api/v1/payments/create")]
         [Authorize]
         [ProducesResponseType(typeof(BaseResponseWithData<PaymentLinkDto>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> CreatePayment([FromBody] PaymentInfoDto paymentInfoDto)
@@ -62,25 +69,55 @@ namespace OnlineCoursePlatform.Controllers
                 var order = await _context.OrderCourses.FirstOrDefaultAsync(od => od.Id == paymentInfoDto.OrderId);
                 if (order is not null && order.Status == OrderStatus.Success)
                 {
-                    return BadRequest(new BaseBadRequestResult() { Errors = new List<string>() { $"The order {paymentInfoDto.OrderId} was paymented" } });
+                    return BadRequest(new BaseResponseWithData<PaymentLinkDto>()
+                    {
+                        Errors = new List<string>() { $"The order {paymentInfoDto.OrderId} was paymented" },
+                        IsSuccess = false,
+                        Message = "Create payment failed"
+                    });
                 }
-                var result = new BaseResultWithData<PaymentLinkDto>();
+                var result = new BaseResponseWithData<PaymentLinkDto>();
                 using (var _transaction = await _context.Database.BeginTransactionAsync())
                 {
-                    var payment = paymentInfoDto.Adapt<Payment>();
+                    var payment = new Payment()
+                    {
+                        ExpireDate = paymentInfoDto.ExpireDate,
+                        MerchantId = paymentInfoDto.MerchantId,
+                        OrderCourseId = paymentInfoDto.OrderId,
+                        PaymentContent = paymentInfoDto.PaymentContent,
+                        PaymentCurrency = paymentInfoDto.PaymentCurrency,
+                        PaymentDate = paymentInfoDto.PaymentDate,
+                        PaymentDestinationId = paymentInfoDto.PaymentDestinationId,
+                        PaymentLanguage = paymentInfoDto.PaymentLanguage,
+                        RequiredAmount = paymentInfoDto.RequiredAmount
+                    };
                     try
                     {
                         var paymentDest = await _context.PaymentDestinations.FirstOrDefaultAsync(t => t.Id == paymentInfoDto.PaymentDestinationId);
+                        Merchant? merchant = null!;
+                        if (string.IsNullOrEmpty(paymentInfoDto.MerchantId))
+                        {
+                            merchant = await _context.Merchants.FirstOrDefaultAsync(m =>
+                            m.MerchantName!.ToLower().Contains(paymentDest!.DesShortName!.ToLower()));
+                        }
+                        else
+                        {
+                            merchant = await _context.Merchants.FindAsync(paymentInfoDto.MerchantId);
+                        }
+                        
 
-                        payment.MerchantId = paymentInfoDto.MerchantId ??
-                            (paymentDest?.DesShortName?.ToLower() == PaymentMethodConstant.VNPAY.ToLower()
-                            ? 1 : paymentDest?.DesShortName?.ToLower() == PaymentMethodConstant.MOMO.ToLower() ? 2 : 3);
+                        // payment.MerchantId = paymentInfoDto.MerchantId ??
+                        //     (paymentDest?.DesShortName?.ToLower() == PaymentMethodConstant.VNPAY.ToLower()
+                        //     ? 1 : paymentDest?.DesShortName?.ToLower() == PaymentMethodConstant.MOMO.ToLower() ? 2 : 3);
+                        payment.MerchantId = merchant?.Id;
                         _context.Payments.Add(payment);
+                        order!.Status = OrderStatus.Progressing;
+                        _context.OrderCourses.Update(order);
                         await _context.SaveChangesAsync();
 
 
                         // Tạo ra một chuỗi nối các thông tin trên theo thứ tự quy định
-                        string data = $"{payment.MerchantId}{payment.OrderId}{payment.RequiredAmount}{payment.PaymentCurrency}{_vnpayConfig.RefundUrl}";
+                        string data = $"{payment.MerchantId}{payment.OrderCourseId}{payment.RequiredAmount}{payment.PaymentCurrency}{_vnpayConfig.ReturnUrl}";
 
                         // Tạo ra một đối tượng HMACSHA256 với khóa bí mật
                         HMACSHA256 hmac = new HMACSHA256(Encoding.UTF8.GetBytes(_vnpayConfig.HashSecret));
@@ -96,7 +133,7 @@ namespace OnlineCoursePlatform.Controllers
                         {
                             SignValue = signValue,
                             SignDate = DateTime.UtcNow,
-                            SignOwn = paymentInfoDto.MerchantId.ToString(),
+                            SignOwn = paymentInfoDto.MerchantId,
                             PaymentId = payment.Id,
                             IsValid = true
                         };
@@ -125,40 +162,14 @@ namespace OnlineCoursePlatform.Controllers
                                     paymentUrl = vnpayRequest.GetLink(_vnpayConfig.PaymentUrl, _vnpayConfig.HashSecret);
                                     break;
                                 }
-                            //process for momo
-                            case PaymentMethodConstant.MOMO:
-                                {
-                                    var momoOneTimeRequest = new MomoOneTimeRequestDto(
-                                        _momoConfig.PartnerCode,
-                                        payment.OrderId.ToString(),
-                                        (long)paymentInfoDto.RequiredAmount!,
-                                        payment.OrderId.ToString(),
-                                        paymentInfoDto.PaymentContent ?? string.Empty,
-                                        _momoConfig.ReturnUrl,
-                                        _momoConfig.IpnUrl,
-                                        "captureWallet",
-                                        ""
-                                    );
-                                    momoOneTimeRequest.MakeSignature(_momoConfig.AccessKey, _momoConfig.SecretKey);
-
-                                    var client = new RestClient(_momoConfig.PaymentUrl);
-                                    var request = new RestRequest() { Method = Method.Post };
-                                    request.AddHeader("Content-Type", "application/json; charset=UTF-8");
-
-                                    request.AddParameter("application/json", JsonConvert.SerializeObject(momoOneTimeRequest), ParameterType.RequestBody);
-                                    var response = await client.ExecuteAsync(request);
-                                    paymentUrl = JsonConvert.DeserializeObject<MomoOneTimeCreateLinkResponseDto>(response.Content!)?.PayUrl;
-                                    break;
-                                }
-
                             default:
                                 await _transaction.RollbackAsync();
                                 break;
                         }
                         await _transaction.CommitAsync();
-                        return Ok(new BaseResultWithData<PaymentLinkDto>()
+                        return Ok(new BaseResponseWithData<PaymentLinkDto>()
                         {
-                            Success = true,
+                            IsSuccess = true,
                             Message = result.Message,
                             Data = new PaymentLinkDto()
                             {
@@ -170,12 +181,22 @@ namespace OnlineCoursePlatform.Controllers
                     catch (Exception ex)
                     {
                         await _transaction.RollbackAsync();
-                        return StatusCode(500, new BaseBadRequestResult() { Errors = new List<string>() { $"Server error - {ex.Message}" } });
+                        return StatusCode(500, new BaseResponseWithData<PaymentLinkDto>()
+                        { 
+                            Errors = new List<string>() { $"Server error - {ex.Message}" },
+                            IsSuccess = false,
+                            Message = "Create payment failed"
+                        });
                     }
 
                 }
             }
-            return BadRequest(new BaseBadRequestResult() { Errors = ModelState.SelectMany(x => x.Value!.Errors.Select(p => p.ErrorMessage)).ToList() });
+            return BadRequest(new BaseResponseWithData<PaymentLinkDto>()
+            {
+                Errors = ModelState.SelectMany(x => x.Value!.Errors.Select(p => p.ErrorMessage)).ToList(),
+                IsSuccess = false,
+                Message = "Create payment failed"
+            });
         }
 
         /// <summary>
@@ -184,7 +205,7 @@ namespace OnlineCoursePlatform.Controllers
         /// <param name="vnPayResponseDto"></param>
         /// <returns></returns>
         [HttpGet]
-        [Route("vnpay-return")]
+        [Route("/api/v1/payments/vnpay-return")]
         [ProducesResponseType(typeof(RedirectResult), (int)HttpStatusCode.Found)]
         public async Task<IActionResult> VnPayReturn([FromQuery] VnPayResponseDto vnPayResponseDto)
         {
@@ -213,7 +234,8 @@ namespace OnlineCoursePlatform.Controllers
                         returnModel.PaymentStatus = "00";
                         returnModel.PaymentId = payment!.Id;
                         //TODO: Make signature
-                        var paymenSign = (await _context.PaymentSignatures.FirstOrDefaultAsync(p => p.PaymentId == vnPayResponseDto.vnp_TxnRef))?.SignValue;
+                        var paymenSign = (await _context.PaymentSignatures
+                            .FirstOrDefaultAsync(p => p.PaymentId == vnPayResponseDto.vnp_TxnRef))?.SignValue;
                         returnModel.Signature = paymenSign;
                     }
                     else
@@ -230,7 +252,12 @@ namespace OnlineCoursePlatform.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(new BaseBadRequestResult() { Errors = new List<string>() { $"Failed : {ex.Message} " } });
+                return BadRequest(new BaseResponseWithData<bool>()
+                {
+                    Errors = new List<string>() { $"Failed : {ex.Message} " },
+                    IsSuccess = false,
+                    Message = "Payment return failed"
+                });
             }
             // var b = returnUrl;
             if (returnUrl.EndsWith("/"))
@@ -240,20 +267,6 @@ namespace OnlineCoursePlatform.Controllers
             var redirectUrl = $"{returnUrl}?{returnModel.ToQueryString()}";
             return Redirect(redirectUrl);
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="momoOneTimeResultRequestDto"></param>
-        /// <returns></returns>
-        [HttpGet]
-        [Route("momo-return")]
-        public async Task<IActionResult> MomoReturn(MomoOneTimeResultRequestDto momoOneTimeResultRequestDto)
-        {
-            var a = await _context.PaymentNotifications.ToListAsync();
-            return Ok();
-        }
-
 
 
         /// <summary>
@@ -272,10 +285,9 @@ namespace OnlineCoursePlatform.Controllers
         /// </remarks>
 
         [HttpGet]
-        [Route("check-vnpay-payment")]
+        [Route("/api/v1/payments/check-vnpay-payment")]
         public async Task<IActionResult> CheckPayment([FromQuery] VnPayIpnResponseDto vnPayIpnResponseDto)
         {
-            System.Console.WriteLine("VnPay was called this api");
             try
             {
                 // check valid signature
@@ -313,9 +325,9 @@ namespace OnlineCoursePlatform.Controllers
                                     {
                                         var paymentTransDto = new CreatePaymentTransDto()
                                         {
-                                            PaymentId = vnPayIpnResponseDto.vnp_TxnRef!.Value,
+                                            PaymentId = vnPayIpnResponseDto.vnp_TxnRef,
                                             TranMessage = message,
-                                            TranDate = DateTime.Now,
+                                            TranDate = DateTime.UtcNow,
                                             TranPayload = JsonConvert.SerializeObject(vnPayIpnResponseDto),
                                             TranStatus = status,
                                             TranAmount = vnPayIpnResponseDto.vnp_Amount / 100
@@ -338,40 +350,32 @@ namespace OnlineCoursePlatform.Controllers
                                         await _context.SaveChangesAsync();
 
                                         // update status for Order
-                                        var order = await _context.Orders.FindAsync(payment.OrderId);
-                                        order!.Status = OrderStatus.Confirmed;
-                                        _context.Entry<Order>(order).State = EntityState.Modified;
+                                        var order = await _context.OrderCourses.FindAsync(payment.OrderCourseId);
+                                        order!.Status = OrderStatus.Success;
+                                        _context.Entry<OrderCourse>(order).State = EntityState.Modified;
                                         await _context.SaveChangesAsync();
 
                                         var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == order.UserId);
                                         if (currentUser is null)
                                         {
                                             _transaction.Rollback();
-                                            return BadRequest(new{RspCode = "99", Message = "Tran error"});
+                                            return BadRequest(new { RspCode = "99", Message = "Tran error" });
                                         }
 
                                         //remove all product items were payment in customer's cart
                                         var orderDetailOfCurrentOrder = await _context.OrderDetails
-                                            .Where(odl => odl.OrderId == order.Id)
+                                            .Where(odl => odl.OrderCourseId == order.Id)
                                             .ToListAsync();
                                         foreach (var odDetail in orderDetailOfCurrentOrder)
                                         {
                                             var cartItem = await _context.CartItems
                                                 .Include(c => c.Cart)
-                                                .FirstOrDefaultAsync(cartItem => 
-                                                    cartItem.ProductId == odDetail.ProductId
+                                                .FirstOrDefaultAsync(cartItem =>
+                                                    cartItem.CourseId == odDetail.CourseId
                                                     && cartItem.Cart.UserId == currentUser.Id);
                                             if (cartItem is not null)
                                             {
-                                                // check if quantity of product in cart > quantity of order then subst quantity in cart
-                                                if (cartItem.Quantity > odDetail.Quantity)
-                                                {
-                                                    cartItem.Quantity -= odDetail.Quantity;
-                                                    _context.Entry<CartItems>(cartItem).State = EntityState.Modified;
-                                                }
-                                                // remove product in cart
-                                                else
-                                                    _context.CartItems.Remove(cartItem);
+                                                _context.CartItems.Remove(cartItem);
                                             }
                                         }
                                         await _context.SaveChangesAsync();
@@ -382,9 +386,9 @@ namespace OnlineCoursePlatform.Controllers
                                         _transaction.Commit();
 
                                         // send message to clien when the order was payment successed;
-                                        await _hubContext.Clients.All.SendAsync(SignalRConstant.ReceiveNotification,
-                                            $"Customer {orderConfirmed.Name} was payment order {orderConfirmed.Id} successed!");
-                                        await _hubContext.Clients.All.SendAsync(SignalRConstant.ReceiveOrderConfirmed, orderConfirmed);
+                                        // await _hubContext.Clients.All.SendAsync(SignalRConstant.ReceiveNotification,
+                                        //     $"Customer {orderConfirmed.Name} was payment order {orderConfirmed.Id} successed!");
+                                        // await _hubContext.Clients.All.SendAsync(SignalRConstant.ReceiveOrderConfirmed, orderConfirmed);
                                         System.Console.WriteLine("Every thing is OK!");
                                         // return for VnPay
                                         return Ok(new { RspCode = "00", Message = "Confirm Success" });
@@ -427,61 +431,6 @@ namespace OnlineCoursePlatform.Controllers
             }
         }
 
-        // /// <summary>
-        // /// 
-        // /// </summary>
-        // /// <param name="vnPayRefundDto"></param>
-        // /// <returns></returns>
-        // [HttpPost]
-        // [Route("vnpay-refund")]
-        // [ProducesResponseType(typeof(BaseResultWithData<string>), (int)HttpStatusCode.OK)]
-        // public async Task<IActionResult> RefundVnPayTransaction(VnPayRefundDto vnPayRefundDto)
-        // {
-        //     var parameters = new Dictionary<string, string>
-        //     {
-        //         {"vnp_Version", _vnpayConfig.Version},
-        //         {"vnp_Command", "refund"},
-        //         {"vnp_TmnCode", _vnpayConfig.TmnCode},
-        //         {"vnp_Amount", (vnPayRefundDto.vnp_Amount * 100).ToString()},
-        //         {"vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss")},
-        //         {"vnp_TransactionDate", vnPayRefundDto.vnp_TransactionDate.ToString("yyyyMMddHHmmss")},
-        //         {"vnp_IpAddr", HttpContext.Connection.RemoteIpAddress!.ToString()},
-        //         {"vnp_TxnRef", vnPayRefundDto.vnp_TxnRef.ToString()},
-        //         {"vnp_OrderInfo", vnPayRefundDto.vnp_OrderInfo},
-        //         // {"vnp_SecureHash", }
-        //     };
-
-        //     var vnp_SecureHash = ComputeVnpSecureHash(parameters, _vnpayConfig.HashSecret);
-        //     parameters.Add("vnp_SecureHash", vnp_SecureHash);
-        //     parameters.Add("vnp_SecureHashType", "SHA256");
-
-        //     using var client = new HttpClient();
-        //     var content = new FormUrlEncodedContent(parameters);
-        //     var response = await client.PostAsync(_vnpayConfig.RefundUrl, content);
-
-        //     if (response.IsSuccessStatusCode)
-        //     {
-        //         var responseString = await response.Content.ReadAsStringAsync();
-        //         // Parse and handle the response from VNPAY here
-        //         return Ok(new BaseResultWithData<string>()
-        //         {
-        //             Success = true,
-        //             Message = "Refund transaction success!",
-        //             Data = responseString
-        //         }); // Return the response string or a parsed object
-        //     }
-        //     return BadRequest(new BaseBadRequestResult() { Errors = new List<string>() { "Failed to refund transaction" } });
-        // }
-
-        // private string ComputeVnpSecureHash(Dictionary<string, string> parameters, string secretKey)
-        // {
-        //     var signData = secretKey + string.Join("", parameters.OrderBy(d => d.Key).Select(d => d.Key + "=" + HttpUtility.UrlEncode(d.Value)).ToList());
-        //     using var sha256 = SHA256.Create();
-        //     var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(signData));
-        //     return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
-        // }
-
-        
         /// <summary>
         /// 
         /// </summary>
@@ -489,23 +438,36 @@ namespace OnlineCoursePlatform.Controllers
         /// <returns></returns>
 
         [HttpGet]
-        [Route("{id}")]
-        [ProducesResponseType(typeof(BaseResultWithData<PaymentDto>), (int)HttpStatusCode.OK)]
-        [ProducesResponseType(typeof(BaseBadRequestResult), (int)HttpStatusCode.NotFound)]
+        [Route("/api/v1/payments/{id}")]
+        [ProducesResponseType(typeof(BaseResponseWithData<PaymentDto>), (int)HttpStatusCode.OK)]
+        [ProducesResponseType(typeof(BaseResponseWithData<PaymentDto>), (int)HttpStatusCode.NotFound)]
         public async Task<IActionResult> GetPaymentById(int id)
         {
             var payment = await _context.Payments.FindAsync(id);
             if (payment is null)
-                return NotFound(new BaseBadRequestResult() { Errors = new List<string>() { $"Payment with Id : {id} not found!" } });
-            return Ok(new BaseResultWithData<PaymentDto>()
+                return NotFound(new BaseResponseWithData<PaymentDto>()
+                { 
+                    Errors = new List<string>() { $"Payment with Id : {id} not found!" },
+                    Message = "Get payment by id failed",
+                    IsSuccess = false
+                });
+            return Ok(new BaseResponseWithData<PaymentDto>()
             {
-                Success = true,
+                IsSuccess = true,
                 Message = $"Get payment by id : {id}",
                 Data = payment.Adapt<PaymentDto>()
             });
         }
-        private async Task<string> GetPaymentDestinationShortName(int paymentDesId)
+
+
+        [HttpGet("/api/v1/payments/paymentdestinations")]
+        public async Task<IActionResult> GetPaymentDestination()
+        {
+            return Ok(await _context.PaymentDestinations.ToListAsync());
+        }
+
+
+        private async Task<string> GetPaymentDestinationShortName(string paymentDesId)
             => (await _context.PaymentDestinations.FindAsync(paymentDesId))!.DesShortName!;
-    }
     }
 }

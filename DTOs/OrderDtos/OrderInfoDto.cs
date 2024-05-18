@@ -8,13 +8,13 @@ namespace OnlineCoursePlatform.DTOs.OrderDtos
 
         public DateTime OrderDate { get; set; }
 
-        public string ShipName { get; set; } = null!;
+        // public string ShipName { get; set; } = null!;
 
-        public string ShipAddress { get; set; } = null!;
+        // public string ShipAddress { get; set; } = null!;
 
-        public string? ShipEmail { get; set; }
+        // public string? ShipEmail { get; set; }
 
-        public string ShipPhoneNumber { get; set; } = null!;
+        // public string ShipPhoneNumber { get; set; } = null!;
 
         public OrderStatus Status { get; set; }
 

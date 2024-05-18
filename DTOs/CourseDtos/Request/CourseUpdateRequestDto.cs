@@ -8,7 +8,7 @@ namespace OnlineCoursePlatform.DTOs.CourseDtos.Request
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public decimal Price { get; set; }
-        public bool? IsFree { get; set; }
+        public bool IsFree { get; set; }
         public bool IsPublic { get; set; }
         public string? CourseDescription { get; set; }
         [NotMapped]

@@ -37,6 +37,8 @@ using OnlineCoursePlatform.Services.CourseTopicServices.Interfaces;
 using OnlineCoursePlatform.Services.CourseTypeServices.Implementations;
 using OnlineCoursePlatform.Services.CourseTypeServices.Interfaces;
 using OnlineCoursePlatform.Services.EmailServices;
+using OnlineCoursePlatform.Services.OrderServices;
+using OnlineCoursePlatform.Services.PaymentServices;
 using OnlineCoursePlatform.Services.UserServices.Implementations;
 using OnlineCoursePlatform.Services.UserServices.Interfaces;
 using Swashbuckle.AspNetCore.Filters;
@@ -64,6 +66,9 @@ var builder = WebApplication.CreateBuilder(args);
         .AddSignInManager()
         .AddDefaultTokenProviders()
         .AddRoles<IdentityRole>();
+
+    builder.Services.Configure<VNPayConfig>(
+        builder.Configuration.GetSection(VNPayConfig.ConfigName));
 
 
     // add jwt, google authentication
@@ -205,6 +210,8 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 // add service
 {
     builder.Services.AddScoped<IJwtService, JwtService>();
+    builder.Services.AddScoped<IOrderService, OrderService>();
+    builder.Services.AddScoped<IPaymentService, PaymentService>();
     builder.Services.AddScoped<ILoginService, LoginService>();
     builder.Services.AddScoped<IRegisterService, RegisterService>();
     builder.Services.AddScoped<IRoleService, RoleService>();
