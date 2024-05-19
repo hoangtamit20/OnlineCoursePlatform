@@ -54,7 +54,7 @@ namespace OnlineCoursePlatform.Controllers
                         Data = new CartResponseDto()
                         {
                             OwnerName = currentUser.Name,
-                            ToltalPrice = 0
+                            TotalPrice = 0
                         },
                         IsSuccess = true,
                         Message = "Get cart successfully"
@@ -88,7 +88,7 @@ namespace OnlineCoursePlatform.Controllers
                 Data = new CartResponseDto()
                 {
                     OwnerName = currentUser.Name,
-                    ToltalPrice = cartItems.Sum(ct => ct.Price),
+                    TotalPrice = cartItems.Sum(ct => ct.Price),
                     CartItemInfoDtos = cartItems
                 },
                 IsSuccess = true,
@@ -231,6 +231,79 @@ namespace OnlineCoursePlatform.Controllers
                 Message = "Delete course in cart successfully"
             });
         }
+
+
+        [HttpGet("/api/v1/carts/mycartitem")]
+        [Authorize]
+        public async Task<IActionResult> GetMyCartItems()
+        {
+            var currentUser = await _userManager.GetUserAsync(this.User);
+            if (currentUser == null)
+            {
+                return StatusCode(statusCode: StatusCodes.Status401Unauthorized,
+                    value: new BaseResponseWithData<List<MyCartItemDto>>()
+                    {
+                        Data = null,
+                        Errors = new List<string>(){ "Invalid Authentication" },
+                        IsSuccess = false,
+                        Message = "Invalid Authentication"
+                    });
+            }
+
+            var myCart = await _dbContext.Carts.FirstOrDefaultAsync(c => c.UserId == currentUser.Id);
+            if (myCart == null)
+            {
+                // create new cart for user
+                myCart = new Cart()
+                {
+                    UserId = currentUser.Id
+                };
+                _dbContext.Carts.Add(myCart);
+                try
+                {
+                    await _dbContext.SaveChangesAsync();
+                    return StatusCode(statusCode: StatusCodes.Status200OK, value: new BaseResponseWithData<List<MyCartItemDto>>()
+                    {
+                        Data = new List<MyCartItemDto>(){},
+                        Message = "Get cart items successfully",
+                        IsSuccess = true
+                    });
+                }
+                catch(Exception ex)
+                {
+                    _logger.LogError(ex.Message);
+                    return StatusCode(statusCode: StatusCodes.Status500InternalServerError,
+                        value: new BaseResponseWithData<List<MyCartItemDto>>()
+                    {
+                        Data = null,
+                        Errors = new List<string>(){ $"An error occured while Get cart items" },
+                        Message = "Get cart items failed",
+                        IsSuccess = false
+                    });
+                }
+            }
+            var cartItems = await _dbContext.CartItems
+                .Include(ci => ci.Cart.User)
+                .Include(ci => ci.Course)
+                .Where(ci => ci.CartId == myCart.Id)
+                .Select(ci => new MyCartItemDto()
+                {
+                    CourseId = ci.CourseId,
+                    CourseName = ci.Course.Name,
+                    Price = ci.Course.Price,
+                    Thumbnail = ci.Course.Thumbnail,
+                    OwnerId = ci.Course.UserId,
+                    OwnerName = ci.Course.User.Name
+                })
+                .ToListAsync();
+
+            return StatusCode(statusCode: StatusCodes.Status200OK, value: new BaseResponseWithData<List<MyCartItemDto>>()
+            {
+                Data = cartItems,
+                Message = "Get cart items successfully",
+                IsSuccess = true
+            });
+        }
     }
 
     public class CartRequestDto
@@ -245,5 +318,15 @@ namespace OnlineCoursePlatform.Controllers
         }
 
         public int QuantityOfItemsAdded { get; set; }
+    }
+
+    public class MyCartItemDto
+    {
+        public int CourseId { get; set; }
+        public string CourseName { get; set; } = null!;
+        public decimal Price { get; set; }
+        public string? Thumbnail { get; set; }
+        public string OwnerId { get; set; } = null!;
+        public string OwnerName { get; set; } = null!;
     }
 }

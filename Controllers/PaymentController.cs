@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using OnlineCoursePlatform.Base.BaseResponse;
 using OnlineCoursePlatform.Configurations;
@@ -354,6 +355,43 @@ namespace OnlineCoursePlatform.Controllers
                                         order!.Status = OrderStatus.Success;
                                         _context.Entry<OrderCourse>(order).State = EntityState.Modified;
                                         await _context.SaveChangesAsync();
+                                        // update for course interactions
+                                        var orderItems = await _context.OrderDetails.Where(od => od.OrderCourseId == order.Id)
+                                            .ToListAsync();
+                                        if (!orderItems.IsNullOrEmpty())
+                                        {
+                                            var interactionCoursesCreate = new List<UserCourseInteraction>();
+                                            var interactionCoursesUpdate = new List<UserCourseInteraction>();
+
+                                            orderItems.ForEach(od => {
+                                                var interactionCourse = _context.UserCourseInteractions.Where(uci => uci.CourseId == od.CourseId
+                                                    && uci.UserId == order.UserId).FirstOrDefault();
+                                                if (interactionCourse == null)
+                                                {
+                                                    interactionCourse = new UserCourseInteraction()
+                                                    {
+                                                        UserId = order.UserId,
+                                                        CourseId = od.CourseId,
+                                                        PurchaseScore = 1,
+                                                    };
+                                                    interactionCoursesCreate.Add(interactionCourse);
+                                                }
+                                                else
+                                                {
+                                                    interactionCourse.PurchaseScore += 1;
+                                                    interactionCoursesUpdate.Add(interactionCourse);
+                                                }
+                                            });
+                                            if (!interactionCoursesUpdate.IsNullOrEmpty())
+                                            {
+                                                _context.UserCourseInteractions.UpdateRange(interactionCoursesUpdate);
+                                            }
+                                            if (!interactionCoursesCreate.IsNullOrEmpty())
+                                            {
+                                                _context.UserCourseInteractions.AddRange(interactionCoursesUpdate);
+                                            }
+                                            await _context.SaveChangesAsync();
+                                        }
 
                                         var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == order.UserId);
                                         if (currentUser is null)

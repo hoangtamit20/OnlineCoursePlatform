@@ -6,7 +6,8 @@ namespace OnlineCoursePlatform.Data.Entities
     public class UserFavoriteCourse
     {
         [Key]
-        public int Id { get; set; }
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+        public DateTime DateAdd { get; set; } = DateTime.UtcNow;
         public string UserId { get; set; } = null!;
         [ForeignKey("UserId")]
         [InverseProperty("UserFavoriteCourses")]
@@ -15,6 +16,5 @@ namespace OnlineCoursePlatform.Data.Entities
         [ForeignKey("CourseId")]
         [InverseProperty("UserFavoriteCourses")]
         public virtual Course Course { get; set; } = null!;
-
     }
 }

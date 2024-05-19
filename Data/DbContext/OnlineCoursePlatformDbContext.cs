@@ -31,6 +31,8 @@ namespace OnlineCoursePlatform.Data.DbContext
         public DbSet<CourseType> CourseTypes { get; set; }
 
         public DbSet<CourseTopic> CourseTopics { get; set; }
+        
+        public DbSet<UserFavoriteCourse> UserFavoriteCourses { get; set; }
 
         public DbSet<Course> Courses { get; set; }
         public DbSet<CourseSubtitle> CourseSubtitles { get; set; }
@@ -159,6 +161,12 @@ namespace OnlineCoursePlatform.Data.DbContext
                 .WithMany(u => u.WaitingMessageChats)
                 .HasForeignKey(w => w.UserId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<UserFavoriteCourse>()
+                .HasOne(ufc => ufc.User)
+                .WithMany(u => u.UserFavoriteCourses)
+                .HasForeignKey(ufc => ufc.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
 
 
             foreach (var entityType in builder.Model.GetEntityTypes())

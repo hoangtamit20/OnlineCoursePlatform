@@ -54,6 +54,10 @@ namespace OnlineCoursePlatform.Data.Entities
         public virtual ICollection<CourseUrlStreaming> CourseUrlStreamings { get; set; } = new List<CourseUrlStreaming>();
         [InverseProperty("Course")]
         public virtual ICollection<OrderDetail> OrderDetails { get; set; } = new List<OrderDetail>();
+
+        [InverseProperty("Course")]
+        public virtual ICollection<UserFavoriteCourse> UserFavoriteCourses { get; set; } = new List<UserFavoriteCourse>();
+
         // [InverseProperty("Course")]
         // public virtual ICollection<CoursePromotion> CoursePromotions { get; set; } = new List<CoursePromotion>();
     }

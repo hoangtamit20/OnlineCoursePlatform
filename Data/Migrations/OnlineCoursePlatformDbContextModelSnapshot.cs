@@ -1182,6 +1182,30 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.ToTable("UserCourseInteractions");
                 });
 
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.UserFavoriteCourse", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DateAdd")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserFavoriteCourses");
+                });
+
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.UserNotification", b =>
                 {
                     b.Property<int>("Id")
@@ -1651,6 +1675,25 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.UserFavoriteCourse", b =>
+                {
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.Course", "Course")
+                        .WithMany("UserFavoriteCourses")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("OnlineCoursePlatform.Data.Entities.AppUser", "User")
+                        .WithMany("UserFavoriteCourses")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.UserNotification", b =>
                 {
                     b.HasOne("OnlineCoursePlatform.Data.Entities.AppUser", "User")
@@ -1687,6 +1730,8 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.Navigation("OrderCourses");
 
                     b.Navigation("UserCourseInteractions");
+
+                    b.Navigation("UserFavoriteCourses");
 
                     b.Navigation("UserNotifications");
 
@@ -1729,6 +1774,8 @@ namespace OnlineCoursePlatform.Data.Migrations
                     b.Navigation("OrderDetails");
 
                     b.Navigation("UserCourseInteractions");
+
+                    b.Navigation("UserFavoriteCourses");
                 });
 
             modelBuilder.Entity("OnlineCoursePlatform.Data.Entities.CourseTopic", b =>

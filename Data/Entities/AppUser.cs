@@ -45,5 +45,7 @@ namespace OnlineCoursePlatform.Data.Entities
         public virtual ICollection<WaitingMessageChat> WaitingMessageChats { get; set; } = new List<WaitingMessageChat>();
         [InverseProperty("User")]
         public virtual ICollection<OrderCourse> OrderCourses { get; set; } = new List<OrderCourse>();
+        [InverseProperty("User")]
+        public virtual ICollection<UserFavoriteCourse> UserFavoriteCourses { get; set; } = new List<UserFavoriteCourse>();
     }
 }

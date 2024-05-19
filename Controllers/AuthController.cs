@@ -43,8 +43,8 @@ namespace OnlineCoursePlatform.Controllers
         /// 
         ///     POST /api/v1/auth/login
         ///     {
-        ///        "username": "hoangtamit20@gmail.com",
-        ///        "password": "abc@123"
+        ///         "email": "hoangtamit20@gmail.com",
+        ///         "password": "Khuong@090217"
         ///     }
         /// 
         /// </remarks>

@@ -3,7 +3,7 @@ namespace OnlineCoursePlatform.DTOs.CartDtos
     public class CartResponseDto
     {
         public string OwnerName { get; set; } = null!;
-        public decimal ToltalPrice { get; set; }
+        public decimal TotalPrice { get; set; }
         public List<CartItemInfoDto> CartItemInfoDtos { get; set; } = new List<CartItemInfoDto>();
 
     }
