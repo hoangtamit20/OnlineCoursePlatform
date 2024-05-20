@@ -10,7 +10,7 @@ namespace OnlineCoursePlatform.DTOs.LessonDtos
         public IFormFile? ThumbnailFile { get; set; }
         public List<IFormFile>? SubtitleFiles { get; set; }
         public IFormFile VideoFile { get; set; } = null!;
-        public int CourseId { get; internal set; }
+        public int CourseId { get; set; }
     }
 
     public class AddLessResponseDto

@@ -33,6 +33,15 @@ namespace OnlineCoursePlatform.Controllers
         [ProducesResponseType(typeof(ChatResponseDto), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetConversationChats([FromBody] UserIdModel userIdModel)
         {
+            if (!string.IsNullOrEmpty(userIdModel.UserId) && !string.IsNullOrEmpty(userIdModel.GroupChatId))
+            {
+                return BadRequest(new BaseResponseWithData<List<ChatInfoDto>>()
+                {
+                    Errors = new List<string>() { $"Invalid data." },
+                    IsSuccess = false,
+                    Message = "Get conversation chats failed"
+                });
+            }
             var userId = userIdModel.UserId;
             if (userId is null)
             {
@@ -43,13 +52,22 @@ namespace OnlineCoursePlatform.Controllers
             var listChats = new List<ChatInfoDto>();
             if (currentUserId is not null)
             {
-                var conversation = await _dbContext.GroupChats
+                GroupChat? conversation = null;
+                if (!string.IsNullOrEmpty(userIdModel.UserId))
+                {
+                    conversation = await _dbContext.GroupChats
                     .Include(gc => gc.UserOfGroupChats)
                     .Where(g =>
                         g.Type == GroupChatType.Conversation &&
                         g.UserOfGroupChats.Any(u => u.UserId == currentUserId) &&
                         g.UserOfGroupChats.Any(u => u.UserId == userId))
                     .FirstOrDefaultAsync();
+                }
+                else
+                {
+                    conversation = await _dbContext.GroupChats.FindAsync(userIdModel.GroupChatId);
+                }
+
                 var currentUser = await _dbContext.Users.FindAsync(currentUserId);
                 var userChat = await _dbContext.Users.FindAsync(userId);
                 if (currentUser is null)
@@ -138,11 +156,11 @@ namespace OnlineCoursePlatform.Controllers
         }
 
 
-        [HttpPost("getgroupchats")]
+        [HttpPost("/api/v1/chats/getorcreategroupchat")]
         [Authorize]
-        public async Task<IActionResult> GetGroupChats([FromBody] GroupChatModel groupChat)
+        public async Task<IActionResult> GetOrCreateGroupChat([FromBody] GroupChatModel requestDto)
         {
-            if (groupChat.UserOfGroupChats.IsNullOrEmpty())
+            if (requestDto.UserOfGroupChats.IsNullOrEmpty())
             {
                 return BadRequest();
             }
@@ -151,25 +169,73 @@ namespace OnlineCoursePlatform.Controllers
             {
                 return Unauthorized();
             }
-            if (string.IsNullOrEmpty(groupChat.GroupChatId))
+            if (string.IsNullOrEmpty(requestDto.GroupChatId))
             {
-                var listUser = new List<AppUser>();
-                groupChat.UserOfGroupChats.ForEach(s =>
+                var users = new List<AppUser>();
+                requestDto.UserOfGroupChats.ForEach(s =>
                 {
                     var user = _userManager.FindByIdAsync(s).Result;
                     if (user != null)
                     {
-                        listUser.Add(user);
+                        users.Add(user);
                     }
                 });
-                // create group and add user to group
-                var group = new GroupChat()
+                if (users.Where(u => u.Id == currentUser.Id).FirstOrDefault() != null)
                 {
-                    AdminId = currentUser.Id,
-                    Name = $"{currentUser.Name} and {listUser.Count} other peoples",
-                    Type = GroupChatType.Group
-                };
-
+                    users.Remove(currentUser);
+                }
+                if (users.Count < 1)
+                {
+                    return BadRequest(new BaseResponseWithData<GroupChatInfoDto>()
+                    {
+                        Errors = new List<string>(){ $"The system does not support chatting with yourself" },
+                        IsSuccess = false,
+                        Data = null,
+                        Message = "Get group chat failed"
+                    });
+                }
+                // create group and add user to group
+                GroupChat? group = null;
+                if (users.Count == 1)
+                {
+                    group = await _dbContext.GroupChats
+                    .Include(gc => gc.UserOfGroupChats)
+                    .Where(g =>
+                        g.Type == GroupChatType.Conversation &&
+                        g.UserOfGroupChats.Any(u => u.UserId == currentUser.Id) &&
+                        g.UserOfGroupChats.Any(u => users.Select(u => u.Id).Contains(u.UserId)))
+                    .FirstOrDefaultAsync();
+                    if (group == null)
+                    {
+                        group = new GroupChat()
+                        {
+                            Name = $"{currentUser.Name} and {users.First().Name}",
+                            Type = GroupChatType.Conversation,
+                        };
+                    }
+                    else
+                    {
+                        return Ok(new BaseResponseWithData<GroupChatInfoDto>()
+                        {
+                            Data = new GroupChatInfoDto()
+                            {
+                                GroupChatId = group.Id,
+                                GroupChatName = group.Name
+                            },
+                            IsSuccess = true,
+                            Message = "Get group chat successfully"
+                        });
+                    }
+                }
+                else
+                {
+                    group = new GroupChat()
+                    {
+                        AdminId = currentUser.Id,
+                        Name = $"{currentUser.Name} and {users.Count} other peoples",
+                        Type = GroupChatType.Group
+                    };
+                }
                 _dbContext.GroupChats.Add(group);
                 try
                 {
@@ -183,7 +249,7 @@ namespace OnlineCoursePlatform.Controllers
                         }
                     };
 
-                    userOfGroupChats.AddRange(listUser.Select(u => new UserOfGroupChat()
+                    userOfGroupChats.AddRange(users.Select(u => new UserOfGroupChat()
                     {
                         GroupChatId = group.Id,
                         UserId = u.Id
@@ -191,8 +257,18 @@ namespace OnlineCoursePlatform.Controllers
 
                     _dbContext.UserOfGroupChats.AddRange(userOfGroupChats);
                     await _dbContext.SaveChangesAsync();
-                    return Ok();
-                    
+                    return Ok(new BaseResponseWithData<GroupChatInfoDto>()
+                    {
+                        Data = new GroupChatInfoDto()
+                        {
+                            AdminId = group.AdminId,
+                            GroupChatId = group.Id,
+                            GroupChatName = group.Name
+                        },
+                        IsSuccess = true,
+                        Message = "Create group chat sucessfully"
+                    });
+
                 }
                 catch (Exception ex)
                 {
@@ -200,7 +276,31 @@ namespace OnlineCoursePlatform.Controllers
                     return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
                 }
             }
-            return BadRequest();
+            else
+            {
+                var groupChat = await _dbContext.GroupChats.FindAsync(requestDto.GroupChatId);
+                if (groupChat == null)
+                {
+                    return NotFound(new BaseResponseWithData<GroupChatInfoDto>()
+                    {
+                        Data = null,
+                        IsSuccess = false,
+                        Errors = new List<string>(){ $"Group chat with id : '{requestDto.GroupChatId}' not found." },
+                        Message = "Get group chat failed"
+                    });
+                }
+                return Ok(new BaseResponseWithData<GroupChatInfoDto>()
+                {
+                    Data = new GroupChatInfoDto()
+                    {
+                        AdminId = groupChat.AdminId,
+                        GroupChatId = groupChat.Id,
+                        GroupChatName = groupChat.Name
+                    },
+                    IsSuccess = true,
+                    Message = "Get group chat success fully"
+                });
+            }
         }
 
 
@@ -225,6 +325,82 @@ namespace OnlineCoursePlatform.Controllers
                     Data = await GetUsersInConversation(currentUserId),
                     IsSuccess = true,
                 });
+            }
+        }
+
+        // GET: api/Chat/{groupId}
+        [HttpGet("/api/v1/chats/{groupId}")]
+        [Authorize]
+        public async Task<ActionResult<ChatResponseDto>> GetMessagesByGroupId(string groupId)
+        {
+            var currentUser = await _userManager.GetUserAsync(this.User);
+            if (currentUser == null)
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                // Lấy thông tin nhóm chat
+                var groupChatInfo = await _dbContext.GroupChats
+                    .Where(g => g.Id == groupId)
+                    .Select(g => new GroupChatInfoDto
+                    {
+                        GroupChatId = g.Id,
+                        GroupChatName = g.Name,
+                        AdminId = g.AdminId
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (groupChatInfo == null)
+                {
+                    return NotFound("Không tìm thấy nhóm chat.");
+                }
+
+                // Lấy tin nhắn của nhóm chat
+                var chatInfos = await _dbContext.MessageChats
+                    .Include(mc => mc.Sender)
+                    .Include(mc => mc.AttachmentOfMessageChats)
+                    .Where(m => m.GroupChatId == groupId)
+                    .OrderBy(m => m.SendDate)
+                    .Select(m => new ChatInfoDto
+                    {
+                        UserId = m.SenderId,
+                        Name = m.Sender.Name, // Giả sử có một liên kết từ tin nhắn đến người dùng
+                        Picture = m.Sender.Picture, // Tương tự, giả sử có một trường ảnh đại diện trong mô hình người dùng
+                        IsCurrent = m.SenderId == currentUser.Id, // Kiểm tra xem tin nhắn có phải của người dùng hiện tại không
+                        MessageText = m.MessageText,
+                        MessageChatId = m.Id,
+                        SendDate = m.SendDate,
+                        ChatFileInfos = m.AttachmentOfMessageChats.Select(cf => new ChatFileInfo
+                        {
+                            Id = cf.Id,
+                            FileUrl = cf.FileUrl,
+                            FileName = cf.FileName,
+                            FileType = cf.FileType
+                        }).ToList()
+                    })
+                    .ToListAsync();
+
+                // Tạo đối tượng ChatResponseDto và gán thông tin nhóm chat và tin nhắn vào
+                var chatResponse = new ChatResponseDto
+                {
+                    GroupChatInfoDto = groupChatInfo,
+                    ChatInfoDtos = chatInfos
+                };
+
+                return Ok(chatResponse);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return StatusCode(statusCode: StatusCodes.Status500InternalServerError,
+                    value: new BaseResponseWithData<ChatResponseDto>()
+                    {
+                        Errors = new List<string>() { $"Error while get data of message chat." },
+                        IsSuccess = false,
+                        Message = "Get message chat failed"
+                    });
             }
         }
 
@@ -346,5 +522,11 @@ namespace OnlineCoursePlatform.Controllers
         public string? Picture { get; set; }
         public string? LatestMessageText { get; set; }
         public string? TimeAgo { get; set; }
+    }
+
+    public class GetOrCreateGroupChatRequestDto
+    {
+        public string? GroupChatId { get; set; }
+        public List<string> UserIds { get; set; } = new();
     }
 }

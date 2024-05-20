@@ -37,6 +37,7 @@ using OnlineCoursePlatform.Services.CourseTopicServices.Interfaces;
 using OnlineCoursePlatform.Services.CourseTypeServices.Implementations;
 using OnlineCoursePlatform.Services.CourseTypeServices.Interfaces;
 using OnlineCoursePlatform.Services.EmailServices;
+using OnlineCoursePlatform.Services.LessonServices;
 using OnlineCoursePlatform.Services.OrderServices;
 using OnlineCoursePlatform.Services.PaymentServices;
 using OnlineCoursePlatform.Services.UserServices.Implementations;
@@ -210,6 +211,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 // add service
 {
     builder.Services.AddScoped<IJwtService, JwtService>();
+    builder.Services.AddScoped<ILessonService, LessonService>();
     builder.Services.AddScoped<IOrderService, OrderService>();
     builder.Services.AddScoped<IPaymentService, PaymentService>();
     builder.Services.AddScoped<ILoginService, LoginService>();
@@ -231,9 +233,9 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 }
 
 // add signalR
-builder.Services.AddSignalR();
-// .AddAzureSignalR(
-// connectionString: builder.Configuration[AppSettingsConfig.AZURE_SIGNALR_CONNECTIONSTRING]);
+builder.Services.AddSignalR()
+    .AddAzureSignalR(
+        connectionString: builder.Configuration[AppSettingsConfig.AZURE_SIGNALR_CONNECTIONSTRING]);
 
 
 var app = builder.Build();

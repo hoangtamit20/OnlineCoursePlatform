@@ -8,6 +8,7 @@ namespace OnlineCoursePlatform.DTOs.CourseDtos.Response
         public string Name { get; set; } = null!;
         public decimal Price { get; set; } = 0;
         public string? Thumbnail { get; set; }
+        public string? Description { get; set; }
         public DateTime DateCreate { get; set; }
         public int WeeklyViews { get; set; }
         public int MonthlyViews { get; set; }

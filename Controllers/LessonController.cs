@@ -32,19 +32,13 @@ namespace OnlineCoursePlatform.Controllers
             
         }
 
-        // [HttpGet("/api/v1/lessons/lessonsofcourse")]
-        // [Authorize]
-        // public async Task<IActionResult> GetLessonsOfCourse([FromBody] GetLessonsOfCourseRequestDto requestDto)
-        // {
-        //     // 
-        // }
-
-        // [HttpGet("/api/v1/lessons/{lessonId}")]
-        // [Authorize(Roles = $"{RolesConstant.Learner}")]
-        // public async Task<IActionResult> GetLesson(int lessonId)
-        // {
-        //     return Ok();
-        // }
+        [HttpPost("/api/v1/lessons/lessonsofcourse")]
+        [Authorize]
+        public async Task<IActionResult> GetLessonsOfCourse([FromBody] GetLessonsOfCourseRequestDto requestDto)
+        {
+            var result = await _lessonService.GetLessonsOfCourseAsync(requestDto: requestDto);
+            return StatusCode(statusCode: result.statusCode, result.data);
+        }
 
         [HttpPost("/api/v1/lesson/addlesson")]
         [Authorize(Roles = $"{RolesConstant.Publisher}")]
@@ -52,17 +46,19 @@ namespace OnlineCoursePlatform.Controllers
         public async Task<IActionResult> AddLesson(AddLessonRequestDto requestDto)
         {
             var result = await _lessonService.AddLessonAsync(requestDto);
-            if (result == null)
-            {
-                return BadRequest();
-            }
-            return Ok(new BaseResponseWithData<AddLessResponseDto>()
-            {
-                Data = result,
-                IsSuccess = true,
-                Message = "Create lesson successfully."
-            });
+            return StatusCode(statusCode: result.statusCode, value: result.result);
         }
+        
+        [HttpGet("/api/v1/lessons/{lessonId}")]
+        [Authorize]
+        public async Task<IActionResult> GetLessonById(int lessonId)
+        {
+            var requestDto = new GetLessonDetailRequestDto(){ LessonId = lessonId };
+            var result = await _lessonService.GetLessonDetailAsync(requestDto);
+            return StatusCode(statusCode: result.statusCode, value: result.result);
+        }
+
+
 
 
 

@@ -56,5 +56,14 @@ namespace OnlineCoursePlatform.Helpers
                 Data = data,
                 Errors = new List<string>() { errorMessage }
             });
+
+        public static (int statusCode, BaseResponseWithData<T> result) UnauthorizedError()
+        {
+            return BaseReturnHelper<T>.GenerateErrorResponse(
+                errorMessage: "Invalid authentication",
+                statusCode: StatusCodes.Status401Unauthorized,
+                message: "Unauthorize",
+                data: default);
+        }
     }
 }

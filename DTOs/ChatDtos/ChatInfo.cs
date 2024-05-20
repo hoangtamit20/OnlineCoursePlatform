@@ -40,6 +40,7 @@ namespace OnlineCoursePlatform.DTOs.ChatDtos
 
     public class UserIdModel
     {
+        public string? GroupChatId { get; set; }
         public string? UserId { get; set; }
     }
 

@@ -500,7 +500,6 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
 
 
 
-
         private string? GetUserIdFromJwt()
         {
             var authHeader = _httpContextAccessor.HttpContext?.Request.Headers["Authorization"].ToString();

@@ -1,10 +1,10 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using OnlineCoursePlatform.Base.BaseResponse;
+using OnlineCoursePlatform.Constants;
 using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.Data.Entities.Order;
@@ -100,6 +100,8 @@ namespace OnlineCoursePlatform.Services.LessonServices
             );
         }
 
+
+
         public async Task<(int statusCode , BaseResponseWithData<LessonDetailResponseDto> result)>
             GetLessonDetailAsync(GetLessonDetailRequestDto requestDto)
         {
@@ -112,6 +114,7 @@ namespace OnlineCoursePlatform.Services.LessonServices
                     message: "Get lesson detail failed",
                     data: null);
             }
+            var roles = await _userManager.GetRolesAsync(currentUser);
             var currentLesson = await _dbContext.Lessons
                 .Include(l => l.LessonSubtitles)
                 .Include(l => l.LessonUrlStreamings)
@@ -144,8 +147,16 @@ namespace OnlineCoursePlatform.Services.LessonServices
                     && od.OrderDate <= DateTime.UtcNow 
                     && od.ExpireDate >= DateTime.UtcNow)
                 .FirstOrDefaultAsync();
-            if (courseOrdered == null && !currentCourse.IsPublic 
-                && currentCourse.UserId != currentUser.Id)
+            // user not purchased, purchase expired, user not admin, user not owner of course
+            bool userIsAdmin = !roles.IsNullOrEmpty() && roles.Contains(RolesConstant.Admin);
+            bool userIsOwnerOfCourse = currentUser.Id == currentCourse.UserId;
+            bool userIsPurchasedCourse = courseOrdered != null;
+
+            if (!currentCourse.IsPublic // course not public
+                && courseOrdered == null // course not purchased
+                && !roles.IsNullOrEmpty() && roles.Contains(RolesConstant.Admin) // currentUser is not admin
+                && currentUser.Id != currentCourse.UserId // currentUser is not owner of course
+            )
             {
                 return BaseReturnHelper<LessonDetailResponseDto>.GenerateErrorResponse(
                     errorMessage: $"You don't have permission access to this lesson.",
@@ -191,16 +202,20 @@ namespace OnlineCoursePlatform.Services.LessonServices
                 message: "Get lesson detail successfully");
         }
 
-        public async Task<AddLessResponseDto?> AddLessonAsync(AddLessonRequestDto requestDto)
+        public async Task<(int statusCode, BaseResponseWithData<AddLessResponseDto> result)> AddLessonAsync(AddLessonRequestDto requestDto)
         {
             var currentUser = await GetCurrentUserAsync();
             if (currentUser == null)
             {
-                return null;
+                return BaseReturnHelper<AddLessResponseDto>.UnauthorizedError();
             }
             if (currentUser.Id != _dbContext.Courses.Find(requestDto.CourseId)?.UserId)
             {
-                return null;
+                return BaseReturnHelper<AddLessResponseDto>.GenerateErrorResponse(
+                    errorMessage: $"The course with id : '{requestDto.CourseId}' not found",
+                    statusCode: StatusCodes.Status404NotFound,
+                    message: "Create lesson failed",
+                    data: null);
             }
             
             Lesson? lesson = new Lesson()
@@ -224,7 +239,11 @@ namespace OnlineCoursePlatform.Services.LessonServices
                 {
                     _logger.LogError(ex.Message);
                     await transaction.RollbackAsync();
-                    return null;
+                    return BaseReturnHelper<AddLessResponseDto>.GenerateErrorResponse(
+                        errorMessage: "An error occured while create lesson",
+                        statusCode: StatusCodes.Status500InternalServerError,
+                        message: "Create lesson failed",
+                        data: null);
                 }
                 if (requestDto.ThumbnailFile != null)
                 {
@@ -245,7 +264,11 @@ namespace OnlineCoursePlatform.Services.LessonServices
                     {
                         _logger.LogError(ex.Message);
                         await transaction.RollbackAsync();
-                        return null;
+                        return BaseReturnHelper<AddLessResponseDto>.GenerateErrorResponse(
+                            errorMessage: "An error occured while create lesson : upload thumbnail file failed",
+                            statusCode: StatusCodes.Status500InternalServerError,
+                            message: "Create lesson failed",
+                            data: null);
                     }
                 }
                 // upload subtitles
@@ -275,7 +298,11 @@ namespace OnlineCoursePlatform.Services.LessonServices
                     {
                         _logger.LogError(ex.Message);
                         await transaction.RollbackAsync();
-                        return null;
+                        return BaseReturnHelper<AddLessResponseDto>.GenerateErrorResponse(
+                            errorMessage: "An error occured while create lesson : upload subtitles file failed",
+                            statusCode: StatusCodes.Status500InternalServerError,
+                            message: "Create lesson failed",
+                            data: null);
                     }
                 }
 
@@ -312,22 +339,38 @@ namespace OnlineCoursePlatform.Services.LessonServices
                     {
                         _logger.LogError(ex.Message);
                         await transaction.RollbackAsync();
-                        return null;
+                        return BaseReturnHelper<AddLessResponseDto>.GenerateErrorResponse(
+                            errorMessage: "An error occured while create lesson : upload video file failed",
+                            statusCode: StatusCodes.Status500InternalServerError,
+                            message: "Create lesson failed",
+                            data: null);
                     }
                 }
                 await transaction.CommitAsync();
             }
-            return new AddLessResponseDto()
-            {
-                Id = lesson.Id,
-                Name = lesson.Name,
-                LessonIndex = lesson.LessonIndex,
-                Description = lesson.Description
-            };
+            return BaseReturnHelper<AddLessResponseDto>.GenerateSuccessResponse(
+                data: new AddLessResponseDto()
+                {
+                    Id = lesson.Id,
+                    Name = lesson.Name,
+                    LessonIndex = lesson.LessonIndex,
+                    Description = lesson.Description
+                },
+                message: "Create lesson successfully"
+            );
         }
 
 
+        // public async Task<(int statusCode, BaseResponseWithData<bool> result)> DeleteLessons(DeleteLessonRequestDto requestDto)
+        // {
+        //     var currentUser = await GetCurrentUserAsync();
+        //     if (currentUser == null)
+        //     {
+        //         return BaseReturnHelper<bool>.UnauthorizedError();
+        //     }
+        //     var rolse = await _userManager.GetRolesAsync(currentUser);
 
+        // }
 
         public async Task<AppUser?> GetCurrentUserAsync()
         {
@@ -338,5 +381,10 @@ namespace OnlineCoursePlatform.Services.LessonServices
             }
             return null;
         }
+    }
+
+    public class DeleteLessonRequestDto
+    {
+        public List<int> LessonIds { get; set; } = new();
     }
 }
