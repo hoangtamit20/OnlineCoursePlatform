@@ -114,8 +114,11 @@ namespace OnlineCoursePlatform.Controllers
         public async Task<IActionResult> CreateCourse(CreateCourseRequestDto createCourseRequestDto)
         {
             var connectionId = Request.Headers["Connection-Id"].ToString();
-            await _hubContext.Clients.Client(connectionId: connectionId)
-                .SendAsync(method: HubConstants.ReceiveProgress, arg1: "Starting create course .....");
+            if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+            {
+                await _hubContext.Clients.Client(connectionId: connectionId)
+                    .SendAsync(method: HubConstants.ReceiveProgress, arg1: "Starting create course .....");
+            }
             if (ModelState.IsValid)
             {
                 var (statusCode, result) = await _courseService.CreateCourseServiceAsync(

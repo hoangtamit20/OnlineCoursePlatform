@@ -103,7 +103,7 @@ namespace OnlineCoursePlatform.Services.AzureBlobStorageServices
             // Get blob container of user
 
             // Get blob container if not exists then create it.
-            var containerClient = _blobServiceClient.GetBlobContainerClient($"container-conversation-chat-{requestDto.GroupChatId}");
+            var containerClient = _blobServiceClient.GetBlobContainerClient($"container-group-chat-{requestDto.GroupChatId}");
             await containerClient.CreateIfNotExistsAsync();
             // Set public permission for blob
             await containerClient.SetAccessPolicyAsync(accessType: PublicAccessType.Blob);
@@ -117,7 +117,10 @@ namespace OnlineCoursePlatform.Services.AzureBlobStorageServices
             foreach (var file in requestDto.Files)
             {
                 // Determine the type of the file
-                string blobName = $"{Path.GetExtension(file.FileName)}{DateTime.Now}";
+                string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file.FileName);
+                string extension = Path.GetExtension(file.FileName);
+                string blobName = $"{fileNameWithoutExtension}{DateTime.UtcNow.ToString("yyyyMMddHHmmss")}{extension}";
+
                 var blobClient = containerClient.GetBlobClient(blobName: blobName);
                 using (var stream = new MemoryStream())
                 {

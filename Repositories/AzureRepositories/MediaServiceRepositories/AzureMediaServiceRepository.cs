@@ -91,7 +91,10 @@ namespace OnlineCoursePlatform.Repositories.AzureRepositories.MediaServiceReposi
             // to get the existing Job. In Media Services v3, Get methods on entities returns ErrorResponseException 
             // if the entity doesn't exist (a case-insensitive check on the name).
             _logger.LogInformation("Creating a Job...");
-            await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(method: HubConstants.ReceiveProgress, arg1: "Creating a Job...");
+            if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+            {
+                await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(method: HubConstants.ReceiveProgress, arg1: "Creating a Job...");
+            }
 
             var job = await transform.GetMediaJobs().CreateOrUpdateAsync(
                 waitUntil: WaitUntil.Completed,
@@ -152,21 +155,31 @@ namespace OnlineCoursePlatform.Repositories.AzureRepositories.MediaServiceReposi
                 job = await job.GetAsync();
                 state = job.Data.State.GetValueOrDefault();
                 _logger.LogInformation($"Job is '{state}'.");
-                await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(method: HubConstants.ReceiveProgress, arg1: $"Job is '{state}'.");
+                if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                {
+                    await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(method: HubConstants.ReceiveProgress, arg1: $"Job is '{state}'.");
+                }
+
 
                 for (int i = 0; i < job.Data.Outputs.Count; i++)
                 {
                     var output = job.Data.Outputs[i];
                     _logger.LogInformation($"\tJobOutput[{i}] is '{output.State}'.");
-                    await _hubContext.Clients
+                    if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                    {
+                        await _hubContext.Clients
                         .Client(connectionId: connectionId)
                         .SendAsync(method: HubConstants.ReceiveProgress, arg1: $"\tJobOutput[{i}] is '{output.State}'.");
+                    }
                     if (output.State == MediaJobState.Processing)
                     {
                         var progressPercentage = output.Progress * 100; // Assuming output.Progress is a value between 0 and 1
                         var progressMessage = $"Job '{job.Data.Name}' is processing {progressPercentage}%";
                         _logger.LogInformation(progressMessage);
-                        await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(method: HubConstants.ReceiveProgress, arg1: progressMessage);
+                        if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                        {
+                            await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(method: HubConstants.ReceiveProgress, arg1: progressMessage);
+                        }
                     }
 
                 }
@@ -210,7 +223,10 @@ namespace OnlineCoursePlatform.Repositories.AzureRepositories.MediaServiceReposi
                 // This method creates a container in storage for the Asset.
                 // The files (blobs) associated with the Asset will be stored in this container.
                 _logger.LogInformation("Creating an input Asset...");
-                await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(method: HubConstants.ReceiveProgress, arg1: "Creating an input Asset...");
+                if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                {
+                    await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(method: HubConstants.ReceiveProgress, arg1: "Creating an input Asset...");
+                }
 
                 mediaAssetResource = (await mediaServicesAccount
                     .GetMediaAssets()
@@ -249,7 +265,10 @@ namespace OnlineCoursePlatform.Repositories.AzureRepositories.MediaServiceReposi
                     double progressPercentage = (double)bytesUploaded / fileToUpload.Length * 100;
                     string progressMessage = $"Uploading file progressing... : {progressPercentage}%";
                     _logger.LogInformation($"{progressMessage}");
-                    await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(method: HubConstants.ReceiveProgress, arg1: progressMessage);
+                    if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                    {
+                        await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(method: HubConstants.ReceiveProgress, arg1: progressMessage);
+                    }
                 };
                 await blob.UploadAsync(stream, progressHandler: progressHandler);
             }
@@ -287,9 +306,12 @@ namespace OnlineCoursePlatform.Repositories.AzureRepositories.MediaServiceReposi
             string connectionId)
         {
             _logger.LogInformation("Creating a streaming locator...");
-            await _hubContext.Clients
+            if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+            {
+                await _hubContext.Clients
                 .Client(connectionId: connectionId)
                 .SendAsync(method: HubConstants.ReceiveProgress, arg1: "Creating a streaming locator...");
+            }
 
             var locator = await mediaServicesAccount.GetStreamingLocators().CreateOrUpdateAsync(
                 waitUntil: WaitUntil.Completed,
@@ -536,9 +558,12 @@ namespace OnlineCoursePlatform.Repositories.AzureRepositories.MediaServiceReposi
             string connectionId)
         {
             _logger.LogInformation($"Creating a content key policy with offline playready and widevine ...");
-            await _hubContext.Clients
-                .Client(connectionId: connectionId)
-                .SendAsync(method: HubConstants.ReceiveProgress, arg1: "Create a protection policy content ...");
+            if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+            {
+                await _hubContext.Clients
+                    .Client(connectionId: connectionId)
+                    .SendAsync(method: HubConstants.ReceiveProgress, arg1: "Create a protection policy content ...");
+            }
 
             var tokenRestriction = new ContentKeyPolicyTokenRestriction(
                 issuer: _configuration[AppSettingsConfig.JWT_ISSUER],

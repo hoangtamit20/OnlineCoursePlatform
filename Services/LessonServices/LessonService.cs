@@ -205,7 +205,8 @@ namespace OnlineCoursePlatform.Services.LessonServices
         public async Task<(int statusCode, BaseResponseWithData<AddLessResponseDto> result)> AddLessonAsync(AddLessonRequestDto requestDto)
         {
             var currentUser = await GetCurrentUserAsync();
-            if (currentUser == null)
+            var connectionId = GetConnectionIdOfSignalRHub();
+            if (currentUser == null || connectionId == null)
             {
                 return BaseReturnHelper<AddLessResponseDto>.UnauthorizedError();
             }
@@ -223,6 +224,7 @@ namespace OnlineCoursePlatform.Services.LessonServices
                 Name = requestDto.Name,
                 Description = requestDto.Description,
                 CourseId = requestDto.CourseId,
+                LessonIndex = requestDto.LessonIndex,
                 DateRelease = requestDto.DateRealease,
                 IsPublic = requestDto.IsPublic,
                 // UploadCost = requestDto.VideoFile.
@@ -314,7 +316,7 @@ namespace OnlineCoursePlatform.Services.LessonServices
                 {
                     var result = await _azureMedia.UploadMediaWithOfflinePlayReadyAndWidevineProtectionServiceAsync(
                         uploadAzureMediaRequestDto: uploadRequestDto,
-                        connectionId: "");
+                        connectionId: connectionId);
                     var lessonUrlStreaming = new LessonUrlStreaming()
                     {
                         AssetName = uploadRequestDto.OutputAssetName,
@@ -381,6 +383,9 @@ namespace OnlineCoursePlatform.Services.LessonServices
             }
             return null;
         }
+
+        private string? GetConnectionIdOfSignalRHub()
+            => _httpAccessor.HttpContext?.Request.Headers["Connection-Id"].ToString();
     }
 
     public class DeleteLessonRequestDto

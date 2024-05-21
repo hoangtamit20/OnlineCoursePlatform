@@ -40,13 +40,133 @@ namespace OnlineCoursePlatform.Hubs
                 .SendAsync(HubConstants.ReceiveNotification, message);
         }
 
-
-        public async Task ConversationChat(MessageRequestDto request)
+        public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            var currentUser = await GetUserFromJwtAsync();
+            // // Lấy UserId của người dùng từ context
+            // var userId = Context.UserIdentifier;
+
+            // // Xóa người dùng khỏi danh sách người dùng đang kết nối khi người dùng ngắt kết nối
+            // _onlineUsers.Remove(userId);
+
+            // Gửi thông báo hoặc thực hiện các thao tác khác khi người dùng ngắt kết nối
+            if (Context.User is not null)
+            {
+                var currentUser = await _userManager.GetUserAsync(Context.User);
+                if (currentUser is not null)
+                    UserOnlineIds.Remove(currentUser.Id);
+            }
+
+            await base.OnDisconnectedAsync(exception);
         }
 
-        // public async Task SendMessage(string message)
+        public override async Task OnConnectedAsync()
+        {
+            if (Context.User is not null)
+            {
+                var current = await _userManager.GetUserAsync(Context.User);
+                if (current is not null)
+                    UserOnlineIds.Add(current.Id);
+            }
+            var currentUser = await GetUserFromJwtAsync();
+            if (currentUser != null)
+            {
+                var connectionId = Context.ConnectionId;
+
+                // Lấy số lượng tin nhắn mới và thông báo mới chưa đọc cho người dùng
+                var unreadMessage = await GetMessageUnRead(currentUser.Id);
+                var unreadNofti = await GetNoftiUnRead(currentUser.Id);
+
+                var newMessage = await GetNewMessageNoftiAsync(currentUser.Id);
+                var newNofti = await GetNewNoftiAsync(currentUser.Id);
+// Gửi thông báo toast cho người dùng với nội dung mới nếu có
+                var toastMessage = $"You have {newMessage.Count} new messages and {newNofti.Count} new notifications";
+                await Clients.Client(connectionId).SendAsync("ToastNewNotifications", toastMessage);
+
+                // Gửi số lượng tin nhắn mới và thông báo mới chưa đọc cho người dùng
+                await Clients.Client(connectionId).SendAsync("SendQuantityOfUnReadMessages", unreadMessage.Count);
+                await Clients.Client(connectionId).SendAsync("SendQuantityOfUnReadNoftifications", unreadNofti.Count);
+            }
+
+            await Groups.AddToGroupAsync(Context.ConnectionId, "SignalR Users");
+            await base.OnConnectedAsync();
+        }
+
+        private async Task<AppUser?> GetUserFromJwtAsync()
+        {
+            var jwtToken = Context.GetHttpContext()?.Request.Query["access_token"].ToString();
+            if (!string.IsNullOrEmpty(jwtToken))
+            {
+                var handler = new JwtSecurityTokenHandler();
+                var jwtSecurityToken = handler.ReadJwtToken(jwtToken);
+                var userId = jwtSecurityToken.Claims.First(claim => claim.Type == ClaimTypes.NameIdentifier).Value;
+                var userExist = await _dbContext.Users.FindAsync(userId);
+                return userExist;
+            }
+            return null;
+        }
+
+        private async Task<IEnumerable<MessageChat>> GetUnsentMessages(string userId)
+        {
+            // Query the database to get the unsent messages for the given user ID
+            var unsentMessages = await _dbContext.WaitingMessageChats
+                .Where(w => w.UserId == userId)
+                .Select(w => w.MessageChat)
+                .ToListAsync();
+            return unsentMessages;
+        }
+
+
+        private async Task<List<UserNotification>> GetNewMessageNoftiAsync(string userId)
+        {
+            var result = await _dbContext.UserNotifications
+                .Where(un => un.UserId == userId
+                    && !string.IsNullOrEmpty(un.MessageChatId)
+                    && !un.IsReceived)
+                .ToListAsync();
+            return result;
+        }
+
+        private async Task<List<UserNotification>> GetNewNoftiAsync(string userId)
+        {
+            var result = await _dbContext.UserNotifications
+                .Where(un => un.UserId == userId
+                    && un.OrderId != null
+                    && !un.IsReceived)
+                .ToListAsync();
+            return result;
+        }
+
+        private async Task<List<UserNotification>> GetMessageUnRead(string userId)
+        {
+            var result = await _dbContext.UserNotifications
+                .Where(un => un.UserId == userId
+                    && !string.IsNullOrEmpty(un.MessageChatId)
+                    && !un.IsRead)
+                .ToListAsync();
+            return result;
+        }
+private async Task<List<UserNotification>> GetNoftiUnRead(string userId)
+        {
+            var result = await _dbContext.UserNotifications
+                .Where(un => un.UserId == userId
+                    && !string.IsNullOrEmpty(un.MessageChatId)
+                    && !un.IsRead)
+                .ToListAsync();
+            return result;
+        }
+    }
+
+    public class MessageRequestDto()
+    {
+        public string ReceiverId { get; set; } = null!;
+        public List<IFormFile>? Files { get; set; }
+        public string GroupChatId { get; set; } = null!;
+    }
+}
+
+
+
+ // public async Task SendMessage(string message)
         // {
         //     var user = Context.User;
 
@@ -93,138 +213,3 @@ namespace OnlineCoursePlatform.Hubs
 
         //     await base.OnConnectedAsync();
         // }
-
-        public override async Task OnDisconnectedAsync(Exception? exception)
-        {
-            // // Lấy UserId của người dùng từ context
-            // var userId = Context.UserIdentifier;
-
-            // // Xóa người dùng khỏi danh sách người dùng đang kết nối khi người dùng ngắt kết nối
-            // _onlineUsers.Remove(userId);
-
-            // Gửi thông báo hoặc thực hiện các thao tác khác khi người dùng ngắt kết nối
-            if (Context.User is not null)
-            {
-                var currentUser = await _userManager.GetUserAsync(Context.User);
-                if (currentUser is not null)
-                    UserOnlineIds.Remove(currentUser.Id);
-            }
-
-            await base.OnDisconnectedAsync(exception);
-        }
-
-
-
-
-        public override async Task OnConnectedAsync()
-        {
-            if (Context.User is not null)
-            {
-                var current = await _userManager.GetUserAsync(Context.User);
-                if (current is not null)
-                    UserOnlineIds.Add(current.Id);
-            }
-            var currentUser = await GetUserFromJwtAsync();
-            if (currentUser != null)
-            {
-                var connectionId = Context.ConnectionId;
-
-                // Lấy số lượng tin nhắn mới và thông báo mới chưa đọc cho người dùng
-                var unreadMessage = await GetMessageUnRead(currentUser.Id);
-                var unreadNofti = await GetNoftiUnRead(currentUser.Id);
-
-                var newMessage = await GetNewMessageNoftiAsync(currentUser.Id);
-                var newNofti = await GetNewNoftiAsync(currentUser.Id);
-
-
-
-                // Gửi thông báo toast cho người dùng với nội dung mới nếu có
-                var toastMessage = $"You have {newMessage.Count} new messages and {newNofti.Count} new notifications";
-                await Clients.Client(connectionId).SendAsync("ToastNewNotifications", toastMessage);
-
-                // Gửi số lượng tin nhắn mới và thông báo mới chưa đọc cho người dùng
-                await Clients.Client(connectionId).SendAsync("SendQuantityOfUnReadMessages", unreadMessage.Count);
-                await Clients.Client(connectionId).SendAsync("SendQuantityOfUnReadNoftifications", unreadNofti.Count);
-            }
-
-            await Groups.AddToGroupAsync(Context.ConnectionId, "SignalR Users");
-            await base.OnConnectedAsync();
-        }
-
-
-
-        private async Task<AppUser?> GetUserFromJwtAsync()
-        {
-            var jwtToken = Context.GetHttpContext()?.Request.Query["access_token"].ToString();
-            if (!string.IsNullOrEmpty(jwtToken))
-            {
-                var handler = new JwtSecurityTokenHandler();
-                var jwtSecurityToken = handler.ReadJwtToken(jwtToken);
-                var userId = jwtSecurityToken.Claims.First(claim => claim.Type == ClaimTypes.NameIdentifier).Value;
-                var userExist = await _dbContext.Users.FindAsync(userId);
-                return userExist;
-            }
-            return null;
-        }
-
-
-        private async Task<IEnumerable<MessageChat>> GetUnsentMessages(string userId)
-        {
-            // Query the database to get the unsent messages for the given user ID
-            var unsentMessages = await _dbContext.WaitingMessageChats
-                .Where(w => w.UserId == userId)
-                .Select(w => w.MessageChat)
-                .ToListAsync();
-            return unsentMessages;
-        }
-
-
-        private async Task<List<UserNotification>> GetNewMessageNoftiAsync(string userId)
-        {
-            var result = await _dbContext.UserNotifications
-                .Where(un => un.UserId == userId
-                    && !string.IsNullOrEmpty(un.MessageChatId)
-                    && !un.IsReceived)
-                .ToListAsync();
-            return result;
-        }
-
-        private async Task<List<UserNotification>> GetNewNoftiAsync(string userId)
-        {
-            var result = await _dbContext.UserNotifications
-                .Where(un => un.UserId == userId
-                    && un.OrderId != null
-                    && !un.IsReceived)
-                .ToListAsync();
-            return result;
-        }
-
-
-        private async Task<List<UserNotification>> GetMessageUnRead(string userId)
-        {
-            var result = await _dbContext.UserNotifications
-                .Where(un => un.UserId == userId
-                    && !string.IsNullOrEmpty(un.MessageChatId)
-                    && !un.IsRead)
-                .ToListAsync();
-            return result;
-        }
-
-        private async Task<List<UserNotification>> GetNoftiUnRead(string userId)
-        {
-            var result = await _dbContext.UserNotifications
-                .Where(un => un.UserId == userId
-                    && !string.IsNullOrEmpty(un.MessageChatId)
-                    && !un.IsRead)
-                .ToListAsync();
-            return result;
-        }
-    }
-
-    public class MessageRequestDto()
-    {
-        public string ReceiverId { get; set; } = null!;
-        public List<IFormFile>? Files { get; set; }
-        public string GroupChatId { get; set; } = null!;
-    }
-}

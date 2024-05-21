@@ -321,6 +321,7 @@ namespace OnlineCoursePlatform.Repositories.CourseRepositories
                     TotalViews = course.TotalViews,
                     MonthlySales = course.MonthlySales,
                     TotalSales = course.TotalSales,
+                    Description = course.CourseDescription,
                     Publisher = new Publisher
                     {
                         CreatorName = course.User.Name,

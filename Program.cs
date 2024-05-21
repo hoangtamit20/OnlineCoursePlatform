@@ -30,6 +30,8 @@ using OnlineCoursePlatform.Services.AuthServices;
 using OnlineCoursePlatform.Services.AuthServices.IAuthServices;
 using OnlineCoursePlatform.Services.AzureBlobStorageServices;
 using OnlineCoursePlatform.Services.AzureMediaServices;
+using OnlineCoursePlatform.Services.BackgroundServices;
+using OnlineCoursePlatform.Services.ChatServices;
 using OnlineCoursePlatform.Services.CourseServices.Implementations;
 using OnlineCoursePlatform.Services.CourseServices.Interfaces;
 using OnlineCoursePlatform.Services.CourseTopicServices.Implementations;
@@ -212,6 +214,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     builder.Services.AddScoped<IJwtService, JwtService>();
     builder.Services.AddScoped<ILessonService, LessonService>();
+    builder.Services.AddScoped<IChatService, ChatService>();
     builder.Services.AddScoped<IOrderService, OrderService>();
     builder.Services.AddScoped<IPaymentService, PaymentService>();
     builder.Services.AddScoped<ILoginService, LoginService>();
@@ -230,6 +233,11 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 // Add SignalR Hub
 {
     // builder.Services.AddSingleton<IHubContext<ProgressHub>>();
+}
+
+// Add background services
+{
+    builder.Services.AddHostedService<ResetViewAndSalesService>();
 }
 
 // add signalR

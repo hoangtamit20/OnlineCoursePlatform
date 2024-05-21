@@ -88,9 +88,12 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
             using var _transaction = await _courseRepository.CreateTransactionAsync();
             {
                 // If create course failed
-                await _hubContext.Clients
-                    .Client(connectionId: connectionId)
-                    .SendAsync(method: HubConstants.ReceiveProgress, arg1: "Create course ....");
+                if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                {
+                    await _hubContext.Clients
+                        .Client(connectionId: connectionId)
+                        .SendAsync(method: HubConstants.ReceiveProgress, arg1: "Create course ....");
+                }
                 var course = new Course()
                 {
                     Name = createCourseRequestDto.Name,
@@ -104,9 +107,12 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
                 try
                 {
                     courseCreated = await _courseRepository.CreateCourseAsync(course: course);
-                    await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(
-                        method: HubConstants.ReceiveProgress,
-                        arg1: "Create course finished");
+                    if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                    {
+                        await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(
+                            method: HubConstants.ReceiveProgress,
+                            arg1: "Create course finished");
+                    }
 
                 }
                 catch (Exception ex)
@@ -140,9 +146,12 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
                 // }
                 if (createCourseRequestDto.ThumbnailFileUpload is not null)
                 {
-                    await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(
-                        method: HubConstants.ReceiveProgress,
-                        arg1: "Upload thumbnail ....");
+                    if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                    {
+                        await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(
+                            method: HubConstants.ReceiveProgress,
+                            arg1: "Upload thumbnail ....");
+                    }
                     UploadPublicFileModel? uploadThumbnailModel = null;
                     try
                     {
@@ -183,9 +192,12 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
                     try
                     {
                         await _courseRepository.UpdateCourseAsync(course: course);
-                        await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(
-                            method: HubConstants.ReceiveProgress,
-                            arg1: "Upload thumbnail finished.");
+                        if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                        {
+                            await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(
+                                method: HubConstants.ReceiveProgress,
+                                arg1: "Upload thumbnail finished.");
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -222,9 +234,12 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
                 if (createCourseRequestDto.SubtitleFileUploads is not null
                     && createCourseRequestDto.SubtitleFileUploads.Count > 0)
                 {
-                    await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(
-                        method: HubConstants.ReceiveProgress,
-                        arg1: "Upload subtitles ....");
+                    if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                    {
+                        await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(
+                            method: HubConstants.ReceiveProgress,
+                            arg1: "Upload subtitles ....");
+                    }
 
                     var uploadSubtitles = await _azureBlobStorageService.UploadPublicFilesToAzureBlobStorageAsync(
                         user: userExists,
@@ -249,9 +264,12 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
                     try
                     {
                         await _courseRepository.AddRangeCourseSubtitlesAsync(listItem: listCourseSubtitles);
-                        await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(
-                            method: HubConstants.ReceiveProgress,
-                            arg1: "Upload subtitles finished ....");
+                        if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                        {
+                            await _hubContext.Clients.Client(connectionId: connectionId).SendAsync(
+                                method: HubConstants.ReceiveProgress,
+                                arg1: "Upload subtitles finished ....");
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -280,10 +298,13 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
                 if (createCourseRequestDto.VideoFileUpload is not null)
                 {
                     // Get file path upload
-                    await _hubContext.Clients
-                        .Client(connectionId: connectionId)
-                        .SendAsync(method: HubConstants.ReceiveProgress,
-                            arg1: "Uploading video demo ....");
+                    if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                    {
+                        await _hubContext.Clients
+                            .Client(connectionId: connectionId)
+                            .SendAsync(method: HubConstants.ReceiveProgress,
+                                arg1: "Uploading video demo ....");
+                    }
 
                     UploadAzureMediaRequestDto<Course> uploadAzureMediaRequestDto = new UploadAzureMediaRequestDto<Course>(
                         user: userExists, entity: course);
@@ -373,8 +394,11 @@ namespace OnlineCoursePlatform.Services.CourseServices.Implementations
 
                 await _transaction.CommitAsync();
                 _logger.LogInformation($"Create course with id : {course.Id} sucessfully");
-                await _hubContext.Clients.Client(connectionId: connectionId)
-                    .SendAsync(method: HubConstants.ReceiveProgress, arg1: "Create course successfully.");
+                if (!string.IsNullOrEmpty(connectionId) && !string.IsNullOrWhiteSpace(connectionId))
+                {
+                    await _hubContext.Clients.Client(connectionId: connectionId)
+                        .SendAsync(method: HubConstants.ReceiveProgress, arg1: "Create course successfully.");
+                }
                 return BaseReturnHelper<CreateCourseResponseDto>.GenerateSuccessResponse(
                     data: courseResponseDto, message: "Create course successfully.");
             };
