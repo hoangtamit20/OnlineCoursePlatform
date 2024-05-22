@@ -8,6 +8,8 @@ using OnlineCoursePlatform.Constants;
 using OnlineCoursePlatform.Data.DbContext;
 using OnlineCoursePlatform.Data.Entities;
 using OnlineCoursePlatform.Data.Entities.Chat;
+using OnlineCoursePlatform.DTOs.ChatDtos;
+using OnlineCoursePlatform.Services.ChatServices;
 
 namespace OnlineCoursePlatform.Hubs
 {
@@ -15,15 +17,28 @@ namespace OnlineCoursePlatform.Hubs
     public class ChatHub : Hub
     {
         private readonly OnlineCoursePlatformDbContext _dbContext;
+        private readonly IChatService _chatService;
         private readonly UserManager<AppUser> _userManager;
 
         public static List<string> UserOnlineIds = new();
+        public static List<string> UsersOnlineNotInChat = new List<string>();
+
         // public static List<string> UserOfflineIds = new();
 
-        public ChatHub(OnlineCoursePlatformDbContext dbContext, UserManager<AppUser> userManager)
+        public ChatHub(OnlineCoursePlatformDbContext dbContext, UserManager<AppUser> userManager, IChatService chatService)
         {
             _dbContext = dbContext;
             _userManager = userManager;
+            _chatService = chatService;
+        }
+
+        public async Task SendMessage(AddChatRequestDto requestDto)
+        {
+            var chatInfo = await _chatService.AddMessageChatAsync(requestDto);
+            if (chatInfo != null)
+            {
+                await Clients.Group(requestDto.GroupChatId).SendAsync("ReceiveMessage", chatInfo);
+            }
         }
 
         public async Task SendMessageToUser(
@@ -78,7 +93,7 @@ namespace OnlineCoursePlatform.Hubs
 
                 var newMessage = await GetNewMessageNoftiAsync(currentUser.Id);
                 var newNofti = await GetNewNoftiAsync(currentUser.Id);
-// Gửi thông báo toast cho người dùng với nội dung mới nếu có
+                // Gửi thông báo toast cho người dùng với nội dung mới nếu có
                 var toastMessage = $"You have {newMessage.Count} new messages and {newNofti.Count} new notifications";
                 await Clients.Client(connectionId).SendAsync("ToastNewNotifications", toastMessage);
 
@@ -145,7 +160,7 @@ namespace OnlineCoursePlatform.Hubs
                 .ToListAsync();
             return result;
         }
-private async Task<List<UserNotification>> GetNoftiUnRead(string userId)
+        private async Task<List<UserNotification>> GetNoftiUnRead(string userId)
         {
             var result = await _dbContext.UserNotifications
                 .Where(un => un.UserId == userId
@@ -166,50 +181,50 @@ private async Task<List<UserNotification>> GetNoftiUnRead(string userId)
 
 
 
- // public async Task SendMessage(string message)
-        // {
-        //     var user = Context.User;
+// public async Task SendMessage(string message)
+// {
+//     var user = Context.User;
 
-        //     if (user.IsInRole("Admin"))
-        //     {
-        //         // Send a message to all users
-        //         await Clients.All.SendAsync("ReceiveMessage", message);
-        //     }
-        //     else
-        //     {
-        //         // Send a message only to the admin
-        //         await Clients.User(adminUserId).SendAsync("ReceiveMessage", message);
-        //     }
-        // }
+//     if (user.IsInRole("Admin"))
+//     {
+//         // Send a message to all users
+//         await Clients.All.SendAsync("ReceiveMessage", message);
+//     }
+//     else
+//     {
+//         // Send a message only to the admin
+//         await Clients.User(adminUserId).SendAsync("ReceiveMessage", message);
+//     }
+// }
 
-        // public async Task SendMessageToAdmin(
-        //     // string userIdAdmin,
-        //     string message)
-        // {
-        //     // Send a message to the admin
-        //     await Clients
-        //         .All
-        //         // .User(userId: userIdAdmin)
-        //         .SendAsync(method: HubConstants.MessageHelper, arg1: message);
-        // }
+// public async Task SendMessageToAdmin(
+//     // string userIdAdmin,
+//     string message)
+// {
+//     // Send a message to the admin
+//     await Clients
+//         .All
+//         // .User(userId: userIdAdmin)
+//         .SendAsync(method: HubConstants.MessageHelper, arg1: message);
+// }
 
 
 
-        // // Dictionary để lưu trữ thông tin về người dùng đang kết nối (UserId và ConnectionId)
-        // private static Dictionary<string, string> _onlineUsers = new Dictionary<string, string>();
+// // Dictionary để lưu trữ thông tin về người dùng đang kết nối (UserId và ConnectionId)
+// private static Dictionary<string, string> _onlineUsers = new Dictionary<string, string>();
 
-        // public override async Task OnConnectedAsync()
-        // {
-        //     // Lấy UserId của người dùng từ context
-        //     var userId = Context.UserIdentifier;
+// public override async Task OnConnectedAsync()
+// {
+//     // Lấy UserId của người dùng từ context
+//     var userId = Context.UserIdentifier;
 
-        //     // Lấy ConnectionId của người dùng từ context
-        //     var connectionId = Context.ConnectionId;
+//     // Lấy ConnectionId của người dùng từ context
+//     var connectionId = Context.ConnectionId;
 
-        //     // Thêm UserId và ConnectionId vào danh sách người dùng đang kết nối
-        //     _onlineUsers[userId] = connectionId;
+//     // Thêm UserId và ConnectionId vào danh sách người dùng đang kết nối
+//     _onlineUsers[userId] = connectionId;
 
-        //     // Gửi thông báo hoặc thực hiện các thao tác khác khi người dùng kết nối thành công
+//     // Gửi thông báo hoặc thực hiện các thao tác khác khi người dùng kết nối thành công
 
-        //     await base.OnConnectedAsync();
-        // }
+//     await base.OnConnectedAsync();
+// }

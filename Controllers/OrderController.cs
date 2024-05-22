@@ -131,5 +131,44 @@ namespace OnlineCoursePlatform.Controllers
             var result = await _orderService.GetOrdersAsync();
             return StatusCode(statusCode: result.statusCode, value: result.result);
         }
+
+        [HttpPut("/api/v1/orders/cancelmyorder/{orderId}")]
+        public async Task<IActionResult> CancelMyOrder(string orderId)
+        {
+            var myOrder = await _context.OrderCourses
+                .Include(od => od.Payments)
+                .Where(od => od.Id == orderId
+                    && !od.Payments.Any(p => p.PaymentStatus == "0" 
+                        && p.OrderCourseId == od.Id
+                        && p.ExpireDate <= DateTime.UtcNow)
+                    && od.Status != OrderStatus.Success)
+                .FirstOrDefaultAsync();
+            if (myOrder == null)
+            {
+                return BadRequest(new BaseResponseWithData<bool>()
+                {
+                    IsSuccess = false,
+                    Errors = new List<string>(){ $"The order with id : '{orderId}' cannot edit the status." },
+                    Message = "Update status for Order failed"
+                });
+            }
+            myOrder.Status = OrderStatus.Cancel;
+            _context.OrderCourses.Update(myOrder);
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok(new BaseResponseWithData<bool>()
+                {
+                    Data = true,
+                    Message = "Update status for order successfully",
+                    IsSuccess = true
+                });
+            }
+            catch(Exception ex)
+            {
+                _logger.LogError(ex.Message);
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
+        }
     }
 }

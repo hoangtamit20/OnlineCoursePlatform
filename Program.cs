@@ -242,8 +242,8 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 
 // add signalR
 builder.Services.AddSignalR()
-    .AddAzureSignalR(
-        connectionString: builder.Configuration[AppSettingsConfig.AZURE_SIGNALR_CONNECTIONSTRING]);
+     .AddAzureSignalR(
+         connectionString: builder.Configuration[AppSettingsConfig.AZURE_SIGNALR_CONNECTIONSTRING]);
 
 
 var app = builder.Build();

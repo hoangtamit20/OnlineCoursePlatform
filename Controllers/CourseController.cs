@@ -251,6 +251,17 @@ namespace OnlineCoursePlatform.Controllers
                 return Unauthorized();
             }
 
+            var course = await _dbContext.Courses.FindAsync(courseId);
+            if (course == null)
+            {
+                return NotFound(new BaseResponseWithData<CheckCoursePurchasedDto>()
+                {
+                    Errors = new List<string>(){ $"The course with id : '{courseId}' not found." },
+                    IsSuccess = false,
+                    Message = "Check course purchased failed"
+                });
+            }
+
             var purchasedCourse = await _dbContext.OrderDetails
                 .Include(od => od.OrderCourse)
                 .Where(od => od.CourseId == courseId
@@ -259,9 +270,9 @@ namespace OnlineCoursePlatform.Controllers
                     && od.ExpireDate >= DateTime.UtcNow).FirstOrDefaultAsync();
             return Ok(new BaseResponseWithData<CheckCoursePurchasedDto>()
             {
-                Data = new CheckCoursePurchasedDto() { IsCoursePurchased = purchasedCourse == null },
-                Message = "Check course purchased successfully",
-                IsSuccess = true
+                Data = new CheckCoursePurchasedDto() { IsCoursePurchased = purchasedCourse != null },
+                Message = purchasedCourse != null ? "Course was purchased" : "Course not purchase",
+                IsSuccess = purchasedCourse != null
             });
         }
     }

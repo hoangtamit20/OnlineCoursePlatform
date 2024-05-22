@@ -65,14 +65,20 @@ namespace OnlineCoursePlatform.Controllers
         [ProducesResponseType(typeof(BaseResponseWithData<PaymentLinkDto>), (int)HttpStatusCode.OK)]
         public async Task<IActionResult> CreatePayment([FromBody] PaymentInfoDto paymentInfoDto)
         {
+            var paymentRequestDto = new PaymentInfoRequestDto()
+            {
+                OrderId = paymentInfoDto.OrderId,
+                PaymentContent = paymentInfoDto.PaymentContent,
+                RequiredAmount = paymentInfoDto.RequiredAmount
+            };
             if (ModelState.IsValid)
             {
-                var order = await _context.OrderCourses.FirstOrDefaultAsync(od => od.Id == paymentInfoDto.OrderId);
+                var order = await _context.OrderCourses.FirstOrDefaultAsync(od => od.Id == paymentRequestDto.OrderId);
                 if (order is not null && order.Status == OrderStatus.Success)
                 {
                     return BadRequest(new BaseResponseWithData<PaymentLinkDto>()
                     {
-                        Errors = new List<string>() { $"The order {paymentInfoDto.OrderId} was paymented" },
+                        Errors = new List<string>() { $"The order {paymentRequestDto.OrderId} was paymented" },
                         IsSuccess = false,
                         Message = "Create payment failed"
                     });
@@ -82,32 +88,32 @@ namespace OnlineCoursePlatform.Controllers
                 {
                     var payment = new Payment()
                     {
-                        ExpireDate = paymentInfoDto.ExpireDate,
-                        MerchantId = paymentInfoDto.MerchantId,
-                        OrderCourseId = paymentInfoDto.OrderId,
-                        PaymentContent = paymentInfoDto.PaymentContent,
-                        PaymentCurrency = paymentInfoDto.PaymentCurrency,
-                        PaymentDate = paymentInfoDto.PaymentDate,
-                        PaymentDestinationId = paymentInfoDto.PaymentDestinationId,
-                        PaymentLanguage = paymentInfoDto.PaymentLanguage,
-                        RequiredAmount = paymentInfoDto.RequiredAmount
+                        ExpireDate = paymentRequestDto.ExpireDate,
+                        MerchantId = paymentRequestDto.MerchantId,
+                        OrderCourseId = paymentRequestDto.OrderId,
+                        PaymentContent = paymentRequestDto.PaymentContent,
+                        PaymentCurrency = paymentRequestDto.PaymentCurrency,
+                        PaymentDate = paymentRequestDto.PaymentDate,
+                        PaymentDestinationId = paymentRequestDto.PaymentDestinationId,
+                        PaymentLanguage = paymentRequestDto.PaymentLanguage,
+                        RequiredAmount = paymentRequestDto.RequiredAmount
                     };
                     try
                     {
-                        var paymentDest = await _context.PaymentDestinations.FirstOrDefaultAsync(t => t.Id == paymentInfoDto.PaymentDestinationId);
+                        var paymentDest = await _context.PaymentDestinations.FirstOrDefaultAsync(t => t.Id == paymentRequestDto.PaymentDestinationId);
                         Merchant? merchant = null!;
-                        if (string.IsNullOrEmpty(paymentInfoDto.MerchantId))
+                        if (string.IsNullOrEmpty(paymentRequestDto.MerchantId))
                         {
                             merchant = await _context.Merchants.FirstOrDefaultAsync(m =>
                             m.MerchantName!.ToLower().Contains(paymentDest!.DesShortName!.ToLower()));
                         }
                         else
                         {
-                            merchant = await _context.Merchants.FindAsync(paymentInfoDto.MerchantId);
+                            merchant = await _context.Merchants.FindAsync(paymentRequestDto.MerchantId);
                         }
                         
 
-                        // payment.MerchantId = paymentInfoDto.MerchantId ??
+                        // payment.MerchantId = paymentRequestDto.MerchantId ??
                         //     (paymentDest?.DesShortName?.ToLower() == PaymentMethodConstant.VNPAY.ToLower()
                         //     ? 1 : paymentDest?.DesShortName?.ToLower() == PaymentMethodConstant.MOMO.ToLower() ? 2 : 3);
                         payment.MerchantId = merchant?.Id;
@@ -134,7 +140,7 @@ namespace OnlineCoursePlatform.Controllers
                         {
                             SignValue = signValue,
                             SignDate = DateTime.UtcNow,
-                            SignOwn = paymentInfoDto.MerchantId,
+                            SignOwn = paymentRequestDto.MerchantId,
                             PaymentId = payment.Id,
                             IsValid = true
                         };
@@ -153,10 +159,10 @@ namespace OnlineCoursePlatform.Controllers
                                         _vnpayConfig.TmnCode,
                                         DateTime.UtcNow,
                                         _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? string.Empty,
-                                        paymentInfoDto.RequiredAmount ?? 0,
-                                        paymentInfoDto.PaymentCurrency ?? string.Empty,
+                                        paymentRequestDto.RequiredAmount ?? 0,
+                                        paymentRequestDto.PaymentCurrency ?? string.Empty,
                                         "other",
-                                        paymentInfoDto.PaymentContent,
+                                        paymentRequestDto.PaymentContent,
                                         _vnpayConfig.ReturnUrl,
                                         payment.Id
                                     );
